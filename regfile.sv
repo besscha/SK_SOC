@@ -17,8 +17,25 @@ module regfile(
 
     logic [31:0] regfile[31:1];
 
-    assign rs1 = (rs1_addr != 5'b0) ? regfile[rs1_addr] : 32'b0;
-    assign rs2 = (rs2_addr != 5'b0) ? regfile[rs2_addr] : 32'b0;
+    always_comb begin
+        if (rs1_addr == 5'b0) begin
+            rs1 = 32'b0;
+        end else if (rs1_addr == rd_addr && rd_we) begin
+            rs1 = rd;
+        end else begin
+            rs1 = regfile[rs1_addr];
+        end
+    end
+    
+    always_comb begin
+        if (rs2_addr == 5'b0) begin
+            rs2 = 32'b0;
+        end else if (rs2_addr == rd_addr && rd_we) begin
+            rs2 = rd;
+        end else begin
+            rs2 = regfile[rs2_addr];
+        end
+    end
 
     always_ff @(posedge clk) begin
         if (rst)begin

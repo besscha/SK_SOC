@@ -33,8 +33,14 @@
 
 // ----------------------------------------------
 
+`define nop 32'h00000013
+
+// ----------------------------------------------
+
 `ifndef DPI_C
 `define DPI_C
 import "DPI-C" function void update_pc(input int pc);
 import "DPI-C" function void update_reg(input int i,input int regfile);
+import "DPI-C" function void pmem_read(input bit re, input int addr, output int rword);
+import "DPI-C" function void pmem_write(input bit we, input int addr, input int wword);
 `endif

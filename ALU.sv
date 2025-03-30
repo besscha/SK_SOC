@@ -10,6 +10,7 @@ module ALU #(
     output logic [ALU_WIDTH-1:0] alu_output,
     output logic zero_flag
 );  
+
     logic [ALU_WIDTH-1:0] alu_add;
     logic [ALU_WIDTH-1:0] alu_sub;
     logic [ALU_WIDTH-1:0] alu_and;

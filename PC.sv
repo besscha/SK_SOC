@@ -8,6 +8,8 @@ module PC(
     input logic [31:0] branch_pc,
     input logic branch_en,
 
+    input logic nop,
+
     output logic [31:0] pc,
     output logic [31:0] npc
 );
@@ -18,15 +20,13 @@ module PC(
     always_ff @(posedge clk) begin
         if(rst) begin
             pc_reg <= 32'b0;
+        end else if(nop) begin
+            pc_reg <= pc_reg;
         end else if(branch_en) begin
             pc_reg <= branch_pc;
         end else begin
             pc_reg <= npc;
         end        
-    end
-
-    always_comb begin
-        update_pc(pc_reg);
     end
 
 endmodule

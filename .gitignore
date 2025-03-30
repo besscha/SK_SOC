@@ -1,0 +1,5 @@
+obj_dir/
+netlist/
+test.txt
+wave.*
+test/

@@ -5,6 +5,7 @@
 /* verilator lint_off VARHIDDEN */
 /* verilator lint_off UNUSEDSIGNAL */
 /* verilator lint_off UNDRIVEN */
+/* verilator lint_off WIDTHEXPAND */
 
 module memory(
     input logic clk,
@@ -127,24 +128,46 @@ module dram #(
     output logic [WIDTH-1:0] dpo
 );
 
-    logic [WIDTH-1:0] mem[0 : 2 ** DEPTH-1];
+    always_comb begin
+        pmem_read(1'b1, dpra, dpo);
+    end
 
-    assign spo = mem[a];
-    assign dpo = mem[dpra];
+    always_comb begin
+        pmem_read(1'b1, a, spo);
+    end
+
+    always_ff @(posedge clk) begin
+        pmem_write(we, a, d);
+    end
+
+endmodule
+
+module bram #(
+    parameter int WIDTH = 32,
+    parameter int DEPTH = 32
+)(
+    input logic clk,
+    input logic [DEPTH-1:0] a,
+    input logic [WIDTH-1:0] d,
+    input logic we,             
+    output logic [WIDTH-1:0] spo,
+
+    input logic [DEPTH-1:0] dpra,
+    output logic [WIDTH-1:0] dpo
+);
+
+    logic [WIDTH-1:0] mem[DEPTH-1:0];
+
+    always_comb begin
+        spo = mem[dpra];
+    end
+
+    always_comb begin
+        dpo = mem[a];
+    end
 
     always_ff @(posedge clk) begin
         if(we) begin
             mem[a] <= d;
         end
     end
-
-    initial begin
-       $readmemh("t.txt", mem, 0, 2 ** DEPTH-1); 
-    end
-
-    /* initial begin
-        for(int i=0; i<10; i=i+1)
-            $display("%d: %h", i, mem[i]); 
-    end */
-
-endmodule

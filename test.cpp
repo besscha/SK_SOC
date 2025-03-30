@@ -4,6 +4,7 @@
 #include <random>
 
 #include "Vsoc.h"
+#include "DRAM.cpp"
 
 using namespace std;
 
@@ -17,8 +18,9 @@ extern "C" void update_reg(int reg_num, int value) {
 }
 
 extern "C" void update_pc(int new_pc) {
-    pc = new_pc;
+    pc = new_pc == 0 ? pc : new_pc - 4;
 }
+
 
 void print_regfile() {
     printf("Register File:\n");
@@ -59,6 +61,9 @@ int main(int argc, char **argv)
     VerilatedVcdC *tfp = new VerilatedVcdC;
     Verilated::traceEverOn(true);
 
+    pmen_load_text("test.txt");
+    //pmen_load_bin("t.bin");
+    
     top->trace(tfp, 99);
     tfp->open("wave.vcd");
 
@@ -75,21 +80,27 @@ int main(int argc, char **argv)
     top->clk = 0;
     top->eval();
     tfp->dump(sim_time++);
-
+    
     for(;;){
+        
         top->clk = top->clk ? 0 : 1;
         top->eval();
         tfp->dump(sim_time++);
-        if (top->t_ist_data == 0x00000073){
+        uint32_t ist;
+        pmem_read(1, pc/4, &ist);
+        //printf("pc: %08x, instruction: %08x\n", pc, ist);
+
+        if (ist == 0x00000000 || ist == 0x00000073) {
+            //printf("End of program\n");
             break;
         }
-
         /* if(top->clk == 1){
             print_regfile();
             getchar();
         } */
 
     }
+    //print_regfile();
 
     if (regfile[10] == 0x00000000) {
         printf("Test passed!\n");
@@ -102,4 +113,3 @@ int main(int argc, char **argv)
     delete top;
     exit(0);
 }
-
