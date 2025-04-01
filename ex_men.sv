@@ -19,7 +19,15 @@ module ex_men(
     input logic [31:0] alu_output,
     output logic [31:0] alu_output_out,
     input logic [31:0] rs2,
-    output logic [31:0] rs2_out
+    output logic [31:0] rs2_out,
+    input logic [11:0] csr_addr,
+    output logic [11:0] csr_addr_out,
+    input logic csr_we,
+    output logic csr_we_out,
+    input logic [31:0] csr_wdata,
+    output logic [31:0] csr_wdata_out,
+    input logic [31:0] csr_rdata,
+    output logic [31:0] csr_rdata_out
 );
 
     logic [31:0] npc_reg;
@@ -30,6 +38,10 @@ module ex_men(
     logic [4:0] rd_addr_reg;
     logic [31:0] alu_output_reg;
     logic [31:0] rs2_reg;
+    logic [11:0] csr_addr_reg;
+    logic csr_we_reg;
+    logic [31:0] csr_wdata_reg;
+    logic [31:0] csr_rdata_reg;
 
     assign npc_out = npc_reg;
     assign rd_we_out = rd_we_reg;
@@ -39,6 +51,10 @@ module ex_men(
     assign alu_output_out = alu_output_reg;
     assign rs2_out = rs2_reg;
     assign rd_addr_out = rd_addr_reg;
+    assign csr_addr_out = csr_addr_reg;
+    assign csr_we_out = csr_we_reg;
+    assign csr_wdata_out = csr_wdata_reg;
+    assign csr_rdata_out = csr_rdata_reg;
 
 
     always_ff @(posedge clk) begin
@@ -51,6 +67,10 @@ module ex_men(
             alu_output_reg <= 32'b0;
             rs2_reg <= 32'b0;
             rd_addr_reg <= 5'b0;
+            csr_addr_reg <= 12'b0;
+            csr_we_reg <= 1'b0;
+            csr_wdata_reg <= 32'b0;
+            csr_rdata_reg <= 32'b0;
         end else begin
             npc_reg <= npc;
             rd_we_reg <= rd_we;
@@ -60,6 +80,10 @@ module ex_men(
             alu_output_reg <= alu_output;
             rs2_reg <= rs2;
             rd_addr_reg <= rd_addr;
+            csr_addr_reg <= csr_addr;
+            csr_we_reg <= csr_we;
+            csr_wdata_reg <= csr_wdata;
+            csr_rdata_reg <= csr_rdata;
         end
     end
 

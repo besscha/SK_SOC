@@ -21,7 +21,12 @@ module decoder(
     output logic dst_write_we,
     output logic [2:0] dst_width,
 
-    output logic [1:0] rd_sel
+    output logic [1:0] rd_sel,
+
+    output logic [11:0] csr_addr,
+    output logic csr_we,
+    output logic [2:0] csr_sel,
+    output logic [4:0] csr_zimm
 );
     
     logic [6:0] opcode;
@@ -54,7 +59,8 @@ module decoder(
         || opcode == `opcode_I_jair
         || opcode == `opcode_J
         || opcode == `opcode_U_lui
-        || opcode == `opcode_U_auipc) begin
+        || opcode == `opcode_U_auipc
+        || opcode == `opcode_I_csr) begin
             rd_we = 1'b1;
         end
         else begin
@@ -69,6 +75,9 @@ module decoder(
             `opcode_J,
             `opcode_I_jair:begin
                 rd_sel = 2'b10;
+            end
+            `opcode_I_csr:begin
+                rd_sel = 2'b11;
             end
             default:begin
                 rd_sel = 2'b00;
@@ -260,6 +269,9 @@ module decoder(
             `opcode_I_jair:begin
                 branch_sel = `branch_sel_jalr;
             end
+            `opcode_I_csr:begin
+                branch_sel = `branch_sel_scr;
+            end
             default:begin
                 branch_sel = 4'b0000;
             end
@@ -268,4 +280,9 @@ module decoder(
 
     assign dst_write_we = (opcode == `opcode_S) ? 1'b1 : 1'b0;
     assign dst_width = funct3;
+
+    assign csr_addr = ist[31:20];
+    assign csr_we = (opcode == `opcode_I_csr) ? 1'b1 : 1'b0;
+    assign csr_sel = funct3;
+    assign csr_zimm = ist[19:15];
 endmodule

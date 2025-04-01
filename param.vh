@@ -20,6 +20,7 @@
 `define opcode_J 7'b1101111
 `define opcode_U_lui 7'b0110111
 `define opcode_U_auipc 7'b0010111
+`define opcode_I_csr 7'b1110011
 // ----------------------------------------------
 
 `define branch_sel_beq 4'b1000
@@ -30,6 +31,7 @@
 `define branch_sel_bgeu 4'b1111
 `define branch_sel_jal 4'b0010
 `define branch_sel_jalr 4'b0011
+`define branch_sel_scr  4'b0111
 
 // ----------------------------------------------
 
@@ -37,10 +39,23 @@
 
 // ----------------------------------------------
 
+`define mcpuid_addr  12'hF00
+`define mcpuid       32'b00_0000_00000000000000001000000000
+
+`define mimpid_addr  12'hF01
+`define mimpid       32'h0000_0721
+
+`define mstatus_addr 12'h300
+`define mtvec_addr        12'h305
+`define mepc_addr         12'h341
+`define mcause_addr       12'h342
+
+// ----------------------------------------------
 `ifndef DPI_C
 `define DPI_C
 import "DPI-C" function void update_pc(input int pc);
 import "DPI-C" function void update_reg(input int i,input int regfile);
 import "DPI-C" function void pmem_read(input bit re, input int addr, output int rword);
 import "DPI-C" function void pmem_write(input bit we, input int addr, input int wword);
+import "DPI-C" function void update_csr(input int csr_num, input int value);
 `endif

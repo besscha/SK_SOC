@@ -171,3 +171,4 @@ module bram #(
             mem[a] <= d;
         end
     end
+endmodule

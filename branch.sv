@@ -7,7 +7,8 @@ module branch(
 
     input logic [31:0] imm,  
     input logic [31:0] current_pc,
-
+    input logic [31:0] current_npc,
+    
     output logic [31:0] next_pc,
     output logic branch_en
 );
@@ -41,6 +42,9 @@ module branch(
             `branch_sel_jalr: begin
                 branch_en = 1'b1;
             end
+            `branch_sel_scr: begin
+                branch_en = 1'b1;
+            end
             default: begin
                 branch_en = 1'b0;
             end
@@ -60,6 +64,9 @@ module branch(
             end
             `branch_sel_jalr: begin
                 next_pc = alu_output;
+            end
+            `branch_sel_scr: begin
+                next_pc = current_npc;
             end
             default: begin
                 next_pc = 0;

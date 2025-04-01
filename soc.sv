@@ -64,6 +64,10 @@ module soc(
     logic ID_dst_write_we;
     logic [2:0] ID_dst_width;
     logic [1:0] ID_rd_sel;
+    logic [11:0] ID_csr_addr;
+    logic ID_csr_we;
+    logic [2:0] ID_csr_sel;
+    logic [4:0] ID_csr_zimm;
 
     decoder u_decoder(
         .ist    	(ID_ist_data     ),
@@ -78,12 +82,17 @@ module soc(
         .branch_sel 	(ID_branch_sel  ),
         .dst_write_we 	(ID_dst_write_we  ),
         .dst_width 	(ID_dst_width  ),
-        .rd_sel 	(ID_rd_sel  )
+        .rd_sel 	(ID_rd_sel  ),
+        .csr_addr 	(ID_csr_addr  ),
+        .csr_we    	(ID_csr_we     ),
+        .csr_sel   	(ID_csr_sel    ),
+        .csr_zimm  	(ID_csr_zimm   )
     );
     
     logic [31:0] ID_rs1;
     logic [31:0] ID_rs2;
     logic [31:0] rd;
+    logic [31:0] ID_csr_rdata;
     
     regfile u_regfile(
         .clk      	(clk       ),
@@ -95,6 +104,16 @@ module soc(
         .rd_addr  	(WB_rd_addr   ),
         .rd_we    	(WB_rd_we     ),
         .rd       	(rd        )
+    );
+
+    CSR u_CSR(
+        .clk      	(clk       ),
+        .rst      	(rst       ),
+        .csr_rdata	(ID_csr_rdata   ),
+        .csr_addr 	(ID_csr_addr  ),
+        .csr_waddr  (WB_csr_addr   ),
+        .csr_wdata	(WB_csr_wdata       ),
+        .csr_we   	(WB_csr_we  )
     );
 
     //--------------------------------------
@@ -134,7 +153,17 @@ module soc(
         .pc         	(ID_pc        	),
         .pc_out     	(EX_pc        	),
         .npc        	(ID_npc       	),
-        .npc_out    	(EX_npc       	)
+        .npc_out    	(EX_npc       	),
+        .csr_addr   	(ID_csr_addr    ),
+        .csr_addr_out   	(EX_csr_addr    ),
+        .csr_we     	(ID_csr_we      ),
+        .csr_we_out 	(EX_csr_we      ),
+        .csr_sel    	(ID_csr_sel     ),
+        .csr_sel_out 	(EX_csr_sel     ),
+        .csr_rdata  	(ID_csr_rdata   ),
+        .csr_rdata_out  	(EX_csr_rdata   ),
+        .csr_zimm   	(ID_csr_zimm    ),
+        .csr_zimm_out   	(EX_csr_zimm    )
     );  
     //--------------------------------------
     // EX
@@ -201,6 +230,22 @@ module soc(
         .zero_flag  	(zero_flag   )
     );
 
+    logic [11:0] EX_csr_addr;
+    logic EX_csr_we;
+    logic [2:0] EX_csr_sel;
+    logic [31:0] EX_csr_rdata;
+    logic [4:0] EX_csr_zimm;
+    logic [31:0] EX_csr_wdata;
+    
+    priv u_priv(
+        .csr_rdata 	(EX_csr_rdata  ),
+        .rs        	(alu_rs1        	),
+        .zimm      	(EX_csr_zimm      	),
+        .csr_sel   	(EX_csr_sel    ),
+        .csr_wdata 	(EX_csr_wdata  )
+    );
+    
+
     //--------------------------------------
     ex_men u_ex_men(
         .clk              	(clk               ),
@@ -220,7 +265,15 @@ module soc(
         .alu_output       	(EX_alu_output        ),
         .alu_output_out   	(MEN_alu_output    ),
         .rs2              	(alu_rs2               ),
-        .rs2_out          	(MEN_rs2           )
+        .rs2_out          	(MEN_rs2           ),
+        .csr_addr         	(EX_csr_addr          ),
+        .csr_addr_out       (MEN_csr_addr       ),
+        .csr_we           	(EX_csr_we            ),
+        .csr_we_out         (MEN_csr_we         ),
+        .csr_wdata        	(EX_csr_wdata         ),
+        .csr_wdata_out      (MEN_csr_wdata      ),
+        .csr_rdata        	(EX_csr_rdata         ),
+        .csr_rdata_out      (MEN_csr_rdata)
     );
     
     //--------------------------------------
@@ -251,6 +304,11 @@ module soc(
         .dst_write_data  	(MEN_rs2   )
     );
 
+    logic [11:0] MEN_csr_addr;
+    logic [31:0] MEN_csr_wdata;
+    logic MEN_csr_we;
+    logic [31:0] MEN_csr_rdata;
+
     //--------------------------------------
 
     men_wb u_men_wb(
@@ -267,7 +325,15 @@ module soc(
         .alu_out     	(MEN_alu_output      ),
         .alu_out_out 	(WB_alu_output  ),
         .npc         	(MEN_npc          ),
-        .npc_out     	(WB_npc      )
+        .npc_out     	(WB_npc      ),
+        .csr_addr       (MEN_csr_addr       ),
+        .csr_addr_out   (WB_csr_addr   ),
+        .csr_rdata      (MEN_csr_rdata      ),
+        .csr_rdata_out  (WB_csr_rdata  ),
+        .csr_we         (MEN_csr_we         ),
+        .csr_we_out     (WB_csr_we     ),
+        .csr_wdata      (MEN_csr_wdata),
+        .csr_wdata_out  (WB_csr_wdata  )
     );
     
     //--------------------------------------
@@ -280,6 +346,11 @@ module soc(
     logic [4:0] WB_rd_addr;
     logic WB_rd_we;
 
+    logic [31:0] WB_csr_rdata;
+    logic WB_csr_we;
+    logic [11:0] WB_csr_addr;
+    logic [31:0] WB_csr_wdata;
+
     always_comb begin
         case(WB_rd_sel)
             2'b00:
@@ -288,6 +359,8 @@ module soc(
                 rd = WB_dst_data;
             2'b10:
                 rd = WB_npc;
+            2'b11:
+                rd = WB_csr_rdata;
             default:
                 rd = WB_alu_output;
         endcase
@@ -328,6 +401,7 @@ module soc(
         .alu_output 	(EX_alu_output  ),
         .imm        	(EX_imm         ),
         .current_pc 	(EX_pc          ),
+        .current_npc 	(EX_npc         ),
         .next_pc    	(branch_pc     ),
         .branch_en  	(branch_en   )
     );

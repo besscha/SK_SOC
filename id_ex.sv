@@ -38,7 +38,17 @@ module id_ex(
     input logic [31:0] pc,
     output logic [31:0] pc_out,
     input logic [31:0] npc,
-    output logic [31:0] npc_out
+    output logic [31:0] npc_out,
+    input logic [11:0] csr_addr,
+    output logic [11:0] csr_addr_out,
+    input logic csr_we,
+    output logic csr_we_out,
+    input logic [2:0] csr_sel,
+    output logic [2:0] csr_sel_out,
+    input logic [31:0] csr_rdata,
+    output logic [31:0] csr_rdata_out,
+    input logic [4:0] csr_zimm,
+    output logic [4:0] csr_zimm_out
 );
 
     logic rd_we_reg;
@@ -57,6 +67,11 @@ module id_ex(
     logic [31:0] pc_reg;
     logic [31:0] npc_reg;
     logic [4:0] rd_addr_reg;
+    logic [11:0] csr_addr_reg;
+    logic csr_we_reg;
+    logic [2:0] csr_sel_reg;
+    logic [31:0] csr_rdata_reg;
+    logic [4:0] csr_zimm_reg;
 
     assign rd_we_out = nop ? 1'b0 : rd_we_reg;
     assign imm_out = nop ? 32'h0 : imm_reg;
@@ -74,6 +89,11 @@ module id_ex(
     assign pc_out = nop ? 32'b0 : pc_reg;
     assign npc_out = nop ? 32'b0 : npc_reg;
     assign rd_addr_out = nop ? 5'b0 : rd_addr_reg;
+    assign csr_addr_out = nop ? 12'b0 : csr_addr_reg;
+    assign csr_we_out = nop ? 1'b0 : csr_we_reg;
+    assign csr_sel_out = nop ? 3'b0 : csr_sel_reg;
+    assign csr_rdata_out = nop ? 32'b0 : csr_rdata_reg;
+    assign csr_zimm_out = nop ? 5'b0 : csr_zimm_reg;
 
     always_ff @(posedge clk) begin
         if (rst | flush) begin
@@ -93,6 +113,11 @@ module id_ex(
             pc_reg <= 32'b0;
             npc_reg <= 32'b0;
             rd_addr_reg <= 5'b0;
+            csr_addr_reg <= 12'b0;
+            csr_we_reg <= 1'b0;
+            csr_sel_reg <= 3'b0;
+            csr_rdata_reg <= 32'b0;
+            csr_zimm_reg <= 5'b0;
         end else if (nop) begin
             rd_we_reg <= rd_we_reg;
             imm_reg <= imm_reg;
@@ -110,6 +135,11 @@ module id_ex(
             pc_reg <= pc_reg;
             npc_reg <= npc_reg;
             rd_addr_reg <= rd_addr_reg;
+            csr_addr_reg <= csr_addr_reg;
+            csr_we_reg <= csr_we_reg;
+            csr_sel_reg <= csr_sel_reg;
+            csr_rdata_reg <= csr_rdata_reg;
+            csr_zimm_reg <= csr_zimm_reg;
         end else begin
             rd_we_reg <= rd_we;
             imm_reg <= imm;
@@ -127,6 +157,11 @@ module id_ex(
             pc_reg <= pc;
             npc_reg <= npc;
             rd_addr_reg <= rd_addr;
+            csr_addr_reg <= csr_addr;
+            csr_we_reg <= csr_we;
+            csr_sel_reg <= csr_sel;
+            csr_rdata_reg <= csr_rdata;
+            csr_zimm_reg <= csr_zimm;
         end
     end
 

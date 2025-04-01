@@ -3,3 +3,5 @@ netlist/
 test.txt
 wave.*
 test/
+*.txt
+*.bin

@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := Vsoc
 
-./obj_dir/Vsoc: soc.sv test.cpp DRAM.cpp ALU.sv memory.sv branch.sv PC.sv regfile.sv decoder.sv param.vh 
-	verilator -Wall soc.sv test.cpp -cc --exe --trace --top-module soc
+./obj_dir/Vsoc: soc.sv test.cpp DRAM.cpp ./nemu/nemu.c ALU.sv memory.sv branch.sv PC.sv regfile.sv decoder.sv param.vh 
+	verilator -Wall soc.sv test.cpp ./nemu/nemu.c -DDIFF -cc -LDFLAGS "-ldl -L ./nemu/riscv32-nemu-interpreter-so" --exe --trace --top-module soc
 	make -C obj_dir -f Vsoc.mk
 
 .PHONY: Vsoc

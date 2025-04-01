@@ -34,7 +34,7 @@ void pmen_load_text(const char *filename) {
 }
 
 void pmen_load_bin (const char *filename) {
-    pmen = new uint32_t[2 ^ 20]; // Allocate 1MB of memory
+    pmen = new uint32_t[1000000]; // Allocate 1MB of memory
     FILE *fp = fopen(filename, "rb");
     if (fp == NULL) {
         printf("Error opening file %s\n", filename);
@@ -45,6 +45,7 @@ void pmen_load_bin (const char *filename) {
         uint32_t word;
         size_t result = fread(&word, sizeof(uint32_t), 1, fp);
         if (result != 1) break; // End of file or read error
+        //printf("addr: %08x, data: %08x\n", addr, word);
         pmen[addr++] = word;
     }
     fclose(fp);
