@@ -10,7 +10,7 @@ module soc(
     logic nop;
     assign nop = nop_forwarding_unit;
     logic flush;
-    assign flush = branch_en;
+    assign flush = branch_en | EX_ecall;
 
     //---------------------------------
     // IF
@@ -68,6 +68,8 @@ module soc(
     logic ID_csr_we;
     logic [2:0] ID_csr_sel;
     logic [4:0] ID_csr_zimm;
+    logic ID_ecall;
+    logic ID_mret;
 
     decoder u_decoder(
         .ist    	(ID_ist_data     ),
@@ -86,7 +88,9 @@ module soc(
         .csr_addr 	(ID_csr_addr  ),
         .csr_we    	(ID_csr_we     ),
         .csr_sel   	(ID_csr_sel    ),
-        .csr_zimm  	(ID_csr_zimm   )
+        .csr_zimm  	(ID_csr_zimm   ),
+        .ecall     	(ID_ecall      ),
+        .mret      	(ID_mret       )
     );
     
     logic [31:0] ID_rs1;
@@ -106,6 +110,9 @@ module soc(
         .rd       	(rd        )
     );
 
+    logic [31:0] mtvec_global;
+    logic [31:0] mepc_global;
+
     CSR u_CSR(
         .clk      	(clk       ),
         .rst      	(rst       ),
@@ -113,7 +120,13 @@ module soc(
         .csr_addr 	(ID_csr_addr  ),
         .csr_waddr  (WB_csr_addr   ),
         .csr_wdata	(WB_csr_wdata       ),
-        .csr_we   	(WB_csr_we  )
+        .csr_we   	(WB_csr_we  ),
+        .mtvec_global 	(mtvec_global  ),
+        .mepc_global 	(mepc_global  ),
+        .mepc_in 	( WB_pc ),
+        .mcause_in 	({WB_exp_code[4],27'b0,WB_exp_code[3:0]} ),
+        .exp_in   	(WB_exp_en  ),
+        .mret_in  	(EX_mret  )
     );
 
     //--------------------------------------
@@ -163,7 +176,11 @@ module soc(
         .csr_rdata  	(ID_csr_rdata   ),
         .csr_rdata_out  	(EX_csr_rdata   ),
         .csr_zimm   	(ID_csr_zimm    ),
-        .csr_zimm_out   	(EX_csr_zimm    )
+        .csr_zimm_out   	(EX_csr_zimm    ),
+        .ecall      	(ID_ecall       ),
+        .ecall_out  	(EX_ecall       ),
+        .mret       	(ID_mret        ),
+        .mret_out   	(EX_mret        )
     );  
     //--------------------------------------
     // EX
@@ -192,6 +209,9 @@ module soc(
 
     logic [31:0] alu_rs1;
     logic [31:0] alu_rs2;
+
+    logic EX_ecall;
+    logic EX_mret;
 
     always_comb begin
         case(forward_rs1)
@@ -250,6 +270,8 @@ module soc(
     ex_men u_ex_men(
         .clk              	(clk               ),
         .rst              	(rst               ),
+        .pc               	(EX_pc                ),
+        .pc_out             (MEN_pc             ),
         .npc              	(EX_npc               ),
         .npc_out          	(MEN_npc          	 ),
         .rd_we            	(EX_rd_we             ),
@@ -273,7 +295,9 @@ module soc(
         .csr_wdata        	(EX_csr_wdata         ),
         .csr_wdata_out      (MEN_csr_wdata      ),
         .csr_rdata        	(EX_csr_rdata         ),
-        .csr_rdata_out      (MEN_csr_rdata)
+        .csr_rdata_out      (MEN_csr_rdata),
+        .ecall           	(EX_ecall            ),
+        .ecall_out          (MEN_ecall          )
     );
     
     //--------------------------------------
@@ -283,6 +307,7 @@ module soc(
     logic [31:0] ist_data;
     logic [31:0] dst_addr;
     logic [31:0] MEN_dst_data;
+    logic [31:0] MEN_pc;
     logic [31:0] MEN_npc;
     logic [31:0] MEN_rs2;
     logic [2:0] MEN_dst_width;
@@ -290,7 +315,9 @@ module soc(
     logic MEN_rd_we;
     logic [1:0] MEN_rd_sel;
     logic [4:0] MEN_rd_addr;
-    
+
+    logic MEN_ecall;
+
     assign dst_addr = MEN_alu_output;
 
     memory u_memory(
@@ -324,6 +351,8 @@ module soc(
         .rd_sel_out  	(WB_rd_sel   ),
         .alu_out     	(MEN_alu_output      ),
         .alu_out_out 	(WB_alu_output  ),
+        .pc             (MEN_pc             ),
+        .pc_out         (WB_pc         ),
         .npc         	(MEN_npc          ),
         .npc_out     	(WB_npc      ),
         .csr_addr       (MEN_csr_addr       ),
@@ -333,7 +362,9 @@ module soc(
         .csr_we         (MEN_csr_we         ),
         .csr_we_out     (WB_csr_we     ),
         .csr_wdata      (MEN_csr_wdata),
-        .csr_wdata_out  (WB_csr_wdata  )
+        .csr_wdata_out  (WB_csr_wdata  ),
+        .ecall          (MEN_ecall          ),
+        .ecall_out      (WB_ecall      )
     );
     
     //--------------------------------------
@@ -342,6 +373,7 @@ module soc(
     logic [1:0] WB_rd_sel;
     logic [31:0] WB_alu_output;
     logic [31:0] WB_dst_data;
+    logic [31:0] WB_pc;
     logic [31:0] WB_npc;
     logic [4:0] WB_rd_addr;
     logic WB_rd_we;
@@ -365,6 +397,16 @@ module soc(
                 rd = WB_alu_output;
         endcase
     end
+
+    logic WB_ecall;
+    logic WB_exp_en;
+    logic [4:0] WB_exp_code;
+
+    exp_commit u_exp_commit(
+        .ecall 	(WB_ecall  ),
+        .exp_en 	(WB_exp_en  ),
+        .exp_code 	(WB_exp_code  )
+    );
 
     //--------------------------------------
     // test module
@@ -402,6 +444,10 @@ module soc(
         .imm        	(EX_imm         ),
         .current_pc 	(EX_pc          ),
         .current_npc 	(EX_npc         ),
+        .exp_en   	    (WB_exp_en    ),
+        .mtvec      	(mtvec_global  ),
+        .mepc       	(mepc_global   ),
+        .mret      	    (EX_mret       ),    
         .next_pc    	(branch_pc     ),
         .branch_en  	(branch_en   )
     );

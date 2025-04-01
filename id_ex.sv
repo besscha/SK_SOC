@@ -48,7 +48,11 @@ module id_ex(
     input logic [31:0] csr_rdata,
     output logic [31:0] csr_rdata_out,
     input logic [4:0] csr_zimm,
-    output logic [4:0] csr_zimm_out
+    output logic [4:0] csr_zimm_out,
+    input logic ecall,
+    output logic ecall_out,
+    input logic mret,
+    output logic mret_out
 );
 
     logic rd_we_reg;
@@ -72,6 +76,8 @@ module id_ex(
     logic [2:0] csr_sel_reg;
     logic [31:0] csr_rdata_reg;
     logic [4:0] csr_zimm_reg;
+    logic ecall_reg;
+    logic mret_reg;
 
     assign rd_we_out = nop ? 1'b0 : rd_we_reg;
     assign imm_out = nop ? 32'h0 : imm_reg;
@@ -94,6 +100,8 @@ module id_ex(
     assign csr_sel_out = nop ? 3'b0 : csr_sel_reg;
     assign csr_rdata_out = nop ? 32'b0 : csr_rdata_reg;
     assign csr_zimm_out = nop ? 5'b0 : csr_zimm_reg;
+    assign ecall_out = nop ? 1'b0 : ecall_reg;
+    assign mret_out = nop ? 1'b0 : mret_reg;
 
     always_ff @(posedge clk) begin
         if (rst | flush) begin
@@ -118,6 +126,8 @@ module id_ex(
             csr_sel_reg <= 3'b0;
             csr_rdata_reg <= 32'b0;
             csr_zimm_reg <= 5'b0;
+            ecall_reg <= 1'b0;
+            mret_reg <= 1'b0;
         end else if (nop) begin
             rd_we_reg <= rd_we_reg;
             imm_reg <= imm_reg;
@@ -140,6 +150,8 @@ module id_ex(
             csr_sel_reg <= csr_sel_reg;
             csr_rdata_reg <= csr_rdata_reg;
             csr_zimm_reg <= csr_zimm_reg;
+            ecall_reg <= ecall_reg;
+            mret_reg <= mret_reg;
         end else begin
             rd_we_reg <= rd_we;
             imm_reg <= imm;
@@ -162,6 +174,8 @@ module id_ex(
             csr_sel_reg <= csr_sel;
             csr_rdata_reg <= csr_rdata;
             csr_zimm_reg <= csr_zimm;
+            ecall_reg <= ecall;
+            mret_reg <= mret;
         end
     end
 

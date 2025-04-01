@@ -26,7 +26,10 @@ module decoder(
     output logic [11:0] csr_addr,
     output logic csr_we,
     output logic [2:0] csr_sel,
-    output logic [4:0] csr_zimm
+    output logic [4:0] csr_zimm,
+
+    output logic ecall,
+    output logic mret
 );
     
     logic [6:0] opcode;
@@ -285,4 +288,7 @@ module decoder(
     assign csr_we = (opcode == `opcode_I_csr) ? 1'b1 : 1'b0;
     assign csr_sel = funct3;
     assign csr_zimm = ist[19:15];
+
+    assign ecall = (ist == `ecall_ist) ? 1'b1 : 1'b0;
+    assign mret = (ist == `mret_ist ) ? 1'b1 : 1'b0;
 endmodule

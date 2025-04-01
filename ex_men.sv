@@ -4,6 +4,8 @@ module ex_men(
     input logic clk,
     input logic rst,
 
+    input logic [31:0] pc,
+    output logic [31:0] pc_out,
     input logic [31:0] npc,
     output logic [31:0] npc_out,
     input logic rd_we,
@@ -27,9 +29,12 @@ module ex_men(
     input logic [31:0] csr_wdata,
     output logic [31:0] csr_wdata_out,
     input logic [31:0] csr_rdata,
-    output logic [31:0] csr_rdata_out
+    output logic [31:0] csr_rdata_out,
+    input logic ecall,
+    output logic ecall_out
 );
 
+    logic [31:0] pc_reg;
     logic [31:0] npc_reg;
     logic rd_we_reg;
     logic dst_write_we_reg;
@@ -42,7 +47,9 @@ module ex_men(
     logic csr_we_reg;
     logic [31:0] csr_wdata_reg;
     logic [31:0] csr_rdata_reg;
+    logic ecall_reg;
 
+    assign pc_out = pc_reg;
     assign npc_out = npc_reg;
     assign rd_we_out = rd_we_reg;
     assign dst_write_we_out = dst_write_we_reg;
@@ -55,10 +62,11 @@ module ex_men(
     assign csr_we_out = csr_we_reg;
     assign csr_wdata_out = csr_wdata_reg;
     assign csr_rdata_out = csr_rdata_reg;
-
+    assign ecall_out = ecall_reg;
 
     always_ff @(posedge clk) begin
         if (rst) begin
+            pc_reg <= 32'b0;
             npc_reg <= 32'b0;
             rd_we_reg <= 1'b0;
             dst_write_we_reg <= 1'b0;
@@ -71,7 +79,9 @@ module ex_men(
             csr_we_reg <= 1'b0;
             csr_wdata_reg <= 32'b0;
             csr_rdata_reg <= 32'b0;
+            ecall_reg <= 1'b0;
         end else begin
+            pc_reg <= pc;
             npc_reg <= npc;
             rd_we_reg <= rd_we;
             dst_write_we_reg <= dst_write_we;
@@ -84,6 +94,7 @@ module ex_men(
             csr_we_reg <= csr_we;
             csr_wdata_reg <= csr_wdata;
             csr_rdata_reg <= csr_rdata;
+            ecall_reg <= ecall;
         end
     end
 

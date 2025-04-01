@@ -49,6 +49,13 @@
 `define mtvec_addr        12'h305
 `define mepc_addr         12'h341
 `define mcause_addr       12'h342
+// -------------------------------------
+
+`define ecall_ist 32'h00000073
+`define mret_ist  32'h30200073
+
+`define ecall_id 0
+`define ecall_code 5'd11
 
 // ----------------------------------------------
 `ifndef DPI_C
