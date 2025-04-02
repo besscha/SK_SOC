@@ -1,4 +1,4 @@
-`include "param.vh"
+`include "./module/param.vh"
 
 module ALU #(
     ALU_WIDTH = 32

@@ -5,3 +5,4 @@ wave.*
 test/
 *.txt
 *.bin
+*.vcd

@@ -1,16 +1,26 @@
 uint32_t *pmen; // 1MB memory
 
-extern "C" void pmem_read(bool re, uint32_t raddr, uint32_t *rword) {
-    if (!re) return;
+extern "C" int pmem_read(bool re, uint32_t raddr) {
+    if (!re) return 0x13;
+    if (raddr >= 10000) {
+        return 0;
+    }
     uint32_t byte_addr = raddr;
-    *rword = pmen[raddr];
-    return;
+    return pmen[raddr];
 }
 
 // write physical memory with write enable we, write addr waddr, write size (1 << mask), write data wword
-extern "C" void pmem_write(bool we, uint32_t waddr, uint32_t wword) {
-    if (!we) return;
-    pmen[waddr] = wword;
+extern "C" void pmem_write(int we, uint32_t waddr, uint32_t wword) {
+    if (we == 0) return; // no write
+    if (waddr >= 10000 && we != 0) {
+        printf("Error: write address out of range: %08x\n", waddr);
+        return;
+    }
+    int mask = (we & 0b1 ? 1 : 0) * 0xff +
+               (we & 0b10 ? 1 : 0) * 0xff00 +
+               (we & 0b100 ? 1 : 0)  * 0xff0000 +
+               (we & 0b1000 ? 1 : 0) * 0xff000000; 
+    pmen[waddr] = wword & mask | pmen[waddr] & ~mask;
     return;
 }
 

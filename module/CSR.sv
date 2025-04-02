@@ -1,4 +1,4 @@
-`include "param.vh"
+`include "./module/param.vh"
 
 module CSR(
     input logic clk, // Clock signal

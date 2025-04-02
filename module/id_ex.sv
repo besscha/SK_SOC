@@ -1,4 +1,4 @@
-
+`include "module/param.vh"
 
 module id_ex(
     input logic clk,

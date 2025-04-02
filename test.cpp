@@ -3,8 +3,8 @@
 #include <verilated_vcd_c.h>
 #include <random>
 
-#include "Vsoc.h"
-#include "DRAM.cpp"
+#include "VTop.h"
+#include "RAM.cpp"
 #include "nemu/nemu.h"
 
 using namespace std;
@@ -15,6 +15,10 @@ int sim_time = 0;
 
 CPU_state SKcpu_state;
 CPU_state nemu_state;
+
+extern "C" void print_test(int num){
+    printf("Hello world! %d\n", num);
+}
 
 extern "C" void update_reg(int reg_num, int value) {
     if (reg_num == 0) return; // x0 is always 0
@@ -116,20 +120,20 @@ void compare(){
 
 void difftest(){
     difftest_step();
-    printf("sk");
+    compare();
+   /*  printf("sk");
     print_regfile(SKcpu_state);
     printf("nemu");
     print_regfile(nemu_state);
     printf("----------------------------------------------------------------\n");
-    compare();
-    getchar();
+    getchar(); */
 }
 
 int main(int argc, char **argv)
 {
     Verilated::commandArgs(argc, argv);
 
-    Vsoc *top = new Vsoc;
+    VTop *top = new VTop;
 
     VerilatedVcdC *tfp = new VerilatedVcdC;
     Verilated::traceEverOn(true);
@@ -165,15 +169,14 @@ int main(int argc, char **argv)
     }
     int last_pc = SKcpu_state.pc;
     
-    for(;;){
+    for(int i=0;i<14;){
         
         top->clk = top->clk ? 0 : 1;
         top->eval();
         tfp->dump(sim_time++);
         uint32_t ist;
-        pmem_read(1, SKcpu_state.pc/4, &ist);
-        //printf("PC: %08x, Instruction: %08x\n", SKcpu_state.pc, ist);
-        
+        ist = pmem_read(1, SKcpu_state.pc/4);
+        //printf("i:%d,PC: %08x, Instruction: %08x\n", i ,SKcpu_state.pc, ist);
         if(last_pc != SKcpu_state.pc){
             last_pc = SKcpu_state.pc;
             difftest();

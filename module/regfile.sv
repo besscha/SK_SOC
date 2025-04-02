@@ -1,5 +1,5 @@
 
-`include "param.vh"
+`include "./module/param.vh"
 
 module regfile(
     input clk,

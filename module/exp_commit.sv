@@ -1,4 +1,4 @@
-`include "param.vh"
+`include "./module/param.vh"
 
 module exp_commit(
     input logic ecall,

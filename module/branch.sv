@@ -1,4 +1,4 @@
-`include "param.vh"
+`include "./module/param.vh"
 
 module branch(
     input logic [3:0] branch_sel,

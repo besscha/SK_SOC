@@ -1,4 +1,4 @@
-`include "param.vh"
+`include "./module/param.vh"
 
 module decoder(
     input logic [31:0] ist,

@@ -1,16 +1,29 @@
 
-`include "param.vh"
+`include "./module/param.vh"
 
 module soc(
     input logic clk,
-    input logic rst
+    input logic rst,
 
+    output logic flush_output,
+    output logic nop_output,
+
+    output logic [29:0] ist_addr,
+    input logic [31:0] ist_data,
+    
+
+    output logic [29:0] dst_addr,
+    output logic [31:0] dst_write_data,
+    input logic [31:0] dst_read_data,
+    output logic [3:0] dst_write_we
 );
 
     logic nop;
-    assign nop = nop_forwarding_unit;
     logic flush;
+    assign nop = nop_forwarding_unit;
+    assign nop_output = nop;
     assign flush = branch_en | EX_ecall;
+    assign flush_output = flush;
 
     //---------------------------------
     // IF
@@ -29,6 +42,8 @@ module soc(
         .pc        	(IF_pc         ),
         .npc       	(IF_npc        )
     );
+
+    assign ist_addr = IF_pc[31:2];
 
     //---------------------------------
     if_id u_if_id(
@@ -265,6 +280,15 @@ module soc(
         .csr_wdata 	(EX_csr_wdata  )
     );
     
+    assign dst_addr = EX_alu_output[31:2];
+    Dcache u_Dcache(
+        .rs2       	(alu_rs2        	),
+        .addr      	(EX_alu_output[1:0]      	),
+        .dst_width 	(EX_dst_width 	),
+        .data_out 	(dst_write_data 	),
+        .dst_write_we(EX_dst_write_we 	),
+        .dst_write_we_out  	(dst_write_we  	)
+    );
 
     //--------------------------------------
     ex_men u_ex_men(
@@ -276,8 +300,6 @@ module soc(
         .npc_out          	(MEN_npc          	 ),
         .rd_we            	(EX_rd_we             ),
         .rd_we_out        	(MEN_rd_we         ),
-        .dst_write_we     	(EX_dst_write_we      ),
-        .dst_write_we_out 	(MEN_dst_write_we  ),
         .dst_width        	(EX_dst_width         ),
         .dst_width_out    	(MEN_dst_width     ),
         .rd_addr          	(EX_rd_addr           ),
@@ -286,8 +308,6 @@ module soc(
         .rd_sel_out       	(MEN_rd_sel        ),
         .alu_output       	(EX_alu_output        ),
         .alu_output_out   	(MEN_alu_output    ),
-        .rs2              	(alu_rs2               ),
-        .rs2_out          	(MEN_rs2           ),
         .csr_addr         	(EX_csr_addr          ),
         .csr_addr_out       (MEN_csr_addr       ),
         .csr_we           	(EX_csr_we            ),
@@ -304,32 +324,23 @@ module soc(
     // MEM
 
     logic [31:0] MEN_alu_output;
-    logic [31:0] ist_data;
-    logic [31:0] dst_addr;
     logic [31:0] MEN_dst_data;
     logic [31:0] MEN_pc;
     logic [31:0] MEN_npc;
-    logic [31:0] MEN_rs2;
     logic [2:0] MEN_dst_width;
-    logic MEN_dst_write_we;
     logic MEN_rd_we;
     logic [1:0] MEN_rd_sel;
     logic [4:0] MEN_rd_addr;
 
     logic MEN_ecall;
 
-    assign dst_addr = MEN_alu_output;
-
-    memory u_memory(
-        .clk             	(clk              ),
-        .ist_addr        	(IF_pc         ),
-        .ist_data        	(ist_data         ),
-        .dst_addr        	(dst_addr         ),
-        .output_data       	(MEN_dst_data         ),
-        .dst_width      	(MEN_dst_width  ),
-        .dst_write_we    	(MEN_dst_write_we     ),
-        .dst_write_data  	(MEN_rs2   )
+    read_ctrl u_read_ctrl(
+        .dst_read_data       (dst_read_data),
+        .addr                (MEN_alu_output[1:0]),
+        .dst_width           (MEN_dst_width),
+        .data_out            (MEN_dst_data)    
     );
+
 
     logic [11:0] MEN_csr_addr;
     logic [31:0] MEN_csr_wdata;
@@ -452,5 +463,4 @@ module soc(
         .branch_en  	(branch_en   )
     );
 
-    
 endmodule

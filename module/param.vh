@@ -32,6 +32,13 @@
 `define branch_sel_jal 4'b0010
 `define branch_sel_jalr 4'b0011
 `define branch_sel_scr  4'b0111
+// ----------------------------------------------
+
+`define data_width_byte 3'b000
+`define data_width_half 3'b001
+`define data_width_word 3'b010
+`define data_width_ubyte 3'b100
+`define data_width_uhalf 3'b101
 
 // ----------------------------------------------
 
@@ -62,7 +69,9 @@
 `define DPI_C
 import "DPI-C" function void update_pc(input int pc);
 import "DPI-C" function void update_reg(input int i,input int regfile);
-import "DPI-C" function void pmem_read(input bit re, input int addr, output int rword);
-import "DPI-C" function void pmem_write(input bit we, input int addr, input int wword);
+import "DPI-C" function int pmem_read(input bit re, input int addr);
+import "DPI-C" function void pmem_write(input int we, input int addr, input int wword);
 import "DPI-C" function void update_csr(input int csr_num, input int value);
+
+import "DPI-C" function void print_test(input int num);
 `endif
