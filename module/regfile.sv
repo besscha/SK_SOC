@@ -1,4 +1,3 @@
-
 `include "./module/param.vh"
 
 module regfile(
@@ -50,10 +49,11 @@ module regfile(
         end
     end
 
+    `ifdef DEBUG
     always_comb begin
         for(int i = 1; i < 32; i++) begin
             update_reg(i, regfile[i]);
         end
     end
-
+    `endif
 endmodule

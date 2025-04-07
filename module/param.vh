@@ -1,3 +1,5 @@
+`define DEBUG 1
+// ---------------------------------------------------------------------
 `define ALUop_and  4'b0000
 `define ALUop_or   4'b0001
 `define ALUop_xor  4'b0010
@@ -65,13 +67,22 @@
 `define ecall_code 5'd11
 
 // ----------------------------------------------
+
+`define main_memory_id 4'b1000
+`define mmo_memory_id  4'b0001
+
+//
+
 `ifndef DPI_C
 `define DPI_C
-import "DPI-C" function void update_pc(input int pc);
-import "DPI-C" function void update_reg(input int i,input int regfile);
-import "DPI-C" function int pmem_read(input bit re, input int addr);
-import "DPI-C" function void pmem_write(input int we, input int addr, input int wword);
-import "DPI-C" function void update_csr(input int csr_num, input int value);
+    `ifdef DEBUG
+    import "DPI-C" function void update_pc(input int pc);
+    import "DPI-C" function void update_reg(input int i,input int regfile);
+    import "DPI-C" function int pmem_read(input bit re, input int addr);
+    import "DPI-C" function void pmem_write(input int we, input int addr, input int wword);
+    import "DPI-C" function void update_csr(input int csr_num, input int value);
 
-import "DPI-C" function void print_test(input int num);
+    import "DPI-C" function void print_test(input int num);
+    `endif
 `endif
+

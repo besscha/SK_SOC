@@ -1,4 +1,3 @@
-
 `include "./module/param.vh"
 
 module soc(
@@ -6,56 +5,106 @@ module soc(
     input logic rst,
 
     output logic flush_output,
-    output logic nop_output,
+    //output logic nop_output,
 
     output logic [29:0] ist_addr,
     input logic [31:0] ist_data,
-    
 
     output logic [29:0] dst_addr,
     output logic [31:0] dst_write_data,
     input logic [31:0] dst_read_data,
     output logic [3:0] dst_write_we
 );
+    assign flush_output = branch_en | EX_ecall;
 
-    logic nop;
-    logic flush;
-    assign nop = nop_forwarding_unit;
-    assign nop_output = nop;
-    assign flush = branch_en | EX_ecall;
-    assign flush_output = flush;
+    logic nop_load_use;
+    assign nop_load_use = (EX_rd_sel == 2'b01) && (EX_rd_addr == ID_rs1_addr || EX_rd_addr == ID_rs2_addr) && (EX_rd_we == 1'b1);
+
+    pipeline_ctrl u_pipeline_ctrl(
+        .nop_load_use       	(nop_load_use       ),
+        .branch_en               	(branch_en               	),
+        .EX_ecall               	(EX_ecall               	),
+        .pc_stall               	(pc_stall              	),
+        .if1_if2_stall              ( if1_if2_stall),
+        .if2_id_stall               (if2_id_stall),
+        .id_ex_stall                (id_ex_stall ),
+        .Icache_stall               (Icache_stall),
+        .if1_if2_flush              (if1_if2_flush),
+        .if2_id_flush               (if2_id_flush),
+        .id_ex_flush                (id_ex_flush ),
+        .Icache_flush               (Icache_flush)
+    );
 
     //---------------------------------
-    // IF
+    // IF1
 
-    logic [31:0] IF_pc;
-    logic [31:0] IF_npc;
+    logic [31:0] IF1_pc;
+    logic [31:0] IF1_npc;
     logic [31:0] branch_pc;
     logic branch_en;
+    logic pc_stall;
 
     PC u_PC(
         .clk       	(clk        ),
         .rst       	(rst        ),
         .branch_pc 	(branch_pc  ),
         .branch_en 	(branch_en  ),
-        .nop       	(nop        ),
-        .pc        	(IF_pc         ),
-        .npc       	(IF_npc        )
+        .stall      (pc_stall        ),
+        .pc        	(IF1_pc         ),
+        .npc       	(IF1_npc        )
     );
 
-    assign ist_addr = IF_pc[31:2];
+    assign ist_addr = IF1_pc[31:2];
 
     //---------------------------------
-    if_id u_if_id(
+    
+    logic if1_if2_stall;
+    logic if1_if2_flush;
+
+    if1_if2 u_if1_if2(
+        .clk     	(clk      ),
+        .rst     	(rst      ),
+        .flush   	(if1_if2_flush    ),
+        .stall     	(if1_if2_stall      ),
+        .pc      	(IF1_pc       ),
+        .pc_out  	(IF2_pc   ),
+        .npc     	(IF1_npc      ),
+        .npc_out 	(IF2_npc  )
+    );
+    //---------------------------------
+    // IF2
+
+    logic [31:0] IF2_pc;
+    logic [31:0] IF2_npc;
+    logic [31:0] IF2_ist_data;
+    logic Icache_stall;
+    logic Icache_flush;
+    
+    Icache u_Icache(
+        .clk          	(clk           ),
+        .rst          	(rst           ),
+        .flush        	(Icache_flush         ),
+        .stall          (Icache_stall           ),
+        .ist_data     	(ist_data      ),
+        .IF2_ist_data 	(IF2_ist_data  )
+    );
+    
+
+    //---------------------------------
+
+    logic if2_id_stall;
+    logic if2_id_flush;
+
+    if2_id u_if2_id(
         .clk       	(clk        ),
         .rst       	(rst        ),
-        .nop       	(nop      ),
-        .flush     	(flush     ),
-        .pc        	(IF_pc         ),
+        .stall      (if2_id_stall      ),
+        .flush     	(if2_id_flush     ),
+        .pc        	(IF2_pc         ),
         .pc_out    	(ID_pc         ),
-        .npc       	(IF_npc        ),
+        .npc       	(IF2_npc        ),
         .npc_out   	(ID_npc        ),
-        .ist_data  	(ist_data   ),
+        .ist_data  	(IF2_ist_data   ),
         .ist_data_out	(ID_ist_data   )
     );
 
@@ -145,11 +194,15 @@ module soc(
     );
 
     //--------------------------------------
+
+    logic id_ex_stall;
+    logic id_ex_flush;
+
     id_ex u_id_ex(
         .clk       	(clk        ),
         .rst       	(rst        ),
-        .nop       	(nop        ),
-        .flush     	(flush     	),
+        .stall      (id_ex_stall        ),
+        .flush     	(id_ex_flush     	),
         .rd_we     	(ID_rd_we      ),
         .rd_we_out 	(EX_rd_we  ),
         .imm       	(ID_imm     ),
@@ -422,9 +475,11 @@ module soc(
     //--------------------------------------
     // test module
 
+    `ifdef DEBUG
     always_comb begin
         update_pc(WB_npc);
     end
+    `endif
 
     // -------------------
 
@@ -432,19 +487,16 @@ module soc(
     // output declaration of module hazard_forwarding_unit
     logic [1:0] forward_rs1;
     logic [1:0] forward_rs2;
-    logic nop_forwarding_unit;
     
     hazard_forwarding_unit u_hazard_forwarding_unit(
         .MEN_rd_we   	(MEN_rd_we    ),
-        .MEN_rd_sel  	(MEN_rd_sel[0]   ),
         .MEN_rd_addr 	(MEN_rd_addr  ),
         .WB_rd_we    	(WB_rd_we     ),
         .WB_rd_addr  	(WB_rd_addr   ),
         .EX_rs1_addr 	(EX_rs1_addr  ),
         .EX_rs2_addr 	(EX_rs2_addr  ),
         .forward_rs1   	(forward_rs1    ),
-        .forward_rs2   	(forward_rs2    ),
-        .nop         	(nop_forwarding_unit          )
+        .forward_rs2   	(forward_rs2    )
     );
     
 

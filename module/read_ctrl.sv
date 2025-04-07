@@ -14,7 +14,7 @@ module read_ctrl(
     logic [31:0] data_out_uhalf;
     logic [31:0] data_out_word;
 
-    always_comb begin
+    always@(*) begin
         case(addr)
             2'd0: begin
                 data_out_byte = {{24{dst_read_data[7]}}, dst_read_data[7:0]};
@@ -35,7 +35,7 @@ module read_ctrl(
         endcase
     end
 
-    always_comb begin
+    always@(*) begin
         case(addr[1])
             1'b0: begin
                 data_out_half = {{16{dst_read_data[15]}}, dst_read_data[15:0]};

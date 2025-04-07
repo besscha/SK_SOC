@@ -26,7 +26,7 @@ extern "C" void update_reg(int reg_num, int value) {
 }
 
 extern "C" void update_pc(int new_pc) {
-    SKcpu_state.pc = new_pc == 0 ? SKcpu_state.pc : new_pc - 4;
+    SKcpu_state.pc = new_pc == 0x80000000 | new_pc == 0x0 ? SKcpu_state.pc : new_pc - 4;
 }
 
 extern "C" void update_csr(int csr_num, int value) {
@@ -89,7 +89,7 @@ void print_regfile(CPU_state cpu_state) {
 }
 
 void compare(){
-    if (SKcpu_state.pc != nemu_state.pc-0x80000000) {
+    if (SKcpu_state.pc != nemu_state.pc) {
         printf("PC mismatch: SKcpu_state: %08x, nemu_state: %08x\n", SKcpu_state.pc, nemu_state.pc);
         //exit(0);
     }
@@ -121,7 +121,7 @@ void compare(){
 void difftest(){
     difftest_step();
     compare();
-   /*  printf("sk");
+    /* printf("sk");
     print_regfile(SKcpu_state);
     printf("nemu");
     print_regfile(nemu_state);
@@ -138,12 +138,12 @@ int main(int argc, char **argv)
     VerilatedVcdC *tfp = new VerilatedVcdC;
     Verilated::traceEverOn(true);
     
-    //pmen_load_text("test.txt");
-    pmen_load_bin("test.bin");
+    pmen_load_text("test.txt");
+    //pmen_load_bin("test.bin");
     init_difftest();
     difftest_step();
 
-    SKcpu_state.pc = 0x0;
+    SKcpu_state.pc = 0x80000000;
     
     top->trace(tfp, 99);
     tfp->open("wave.vcd");
@@ -169,20 +169,21 @@ int main(int argc, char **argv)
     }
     int last_pc = SKcpu_state.pc;
     
-    for(int i=0;i<14;){
+    for(int i=0;i<200;){
         
         top->clk = top->clk ? 0 : 1;
         top->eval();
         tfp->dump(sim_time++);
         uint32_t ist;
-        ist = pmem_read(1, SKcpu_state.pc/4);
+        ist = pmem_read(1, (SKcpu_state.pc-0x80000000)/4);
         //printf("i:%d,PC: %08x, Instruction: %08x\n", i ,SKcpu_state.pc, ist);
         if(last_pc != SKcpu_state.pc){
             last_pc = SKcpu_state.pc;
+            //printf("led: %08x\n", top->LED);
             difftest();
         }
 
-        if (ist == 0x00000000 || ist == 0x00100073) {
+        if (ist == 0x00000000 || ist == 0x00000073) {
             printf("End of program\n");
             break;
         }
