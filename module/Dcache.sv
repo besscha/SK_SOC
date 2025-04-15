@@ -1,4 +1,4 @@
-`include "./module/param.vh"
+`include "param.vh"
 
 module Dcache(
     input logic [31:0] rs2,

@@ -1,4 +1,4 @@
-`include "./module/param.vh"
+`include "param.vh"
 /* verilator lint_off UNUSEDSIGNAL */
 /* verilator lint_off IMPLICIT */
 /* verilator lint_off UNDRIVEN */

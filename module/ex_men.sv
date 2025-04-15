@@ -1,6 +1,7 @@
 module ex_men(
     input logic clk,
     input logic rst,
+    input logic stall,
 
     input logic [31:0] pc,
     output logic [31:0] pc_out,
@@ -12,8 +13,8 @@ module ex_men(
     output logic [2:0] dst_width_out,
     input logic [4:0] rd_addr,
     output logic [4:0] rd_addr_out,
-    input logic [1:0] rd_sel,
-    output logic [1:0] rd_sel_out,
+    input logic [2:0] rd_sel,
+    output logic [2:0] rd_sel_out,
     input logic [31:0] alu_output,
     output logic [31:0] alu_output_out,
     input logic [11:0] csr_addr,
@@ -34,7 +35,7 @@ module ex_men(
             npc_out <= 32'h8000_0000;
             rd_we_out <= 1'b0;
             dst_width_out <= 3'b0;
-            rd_sel_out <= 2'b0;
+            rd_sel_out <= 3'b0;
             alu_output_out <= 32'b0;
             rd_addr_out <= 5'b0;
             csr_addr_out <= 12'b0;
@@ -42,7 +43,7 @@ module ex_men(
             csr_wdata_out <= 32'b0;
             csr_rdata_out <= 32'b0;
             ecall_out <= 1'b0;
-        end else begin
+        end else if (!stall) begin
             pc_out <= pc;
             npc_out <= npc;
             rd_we_out <= rd_we;

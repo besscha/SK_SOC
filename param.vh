@@ -1,4 +1,5 @@
-`define DEBUG 1
+`define DEBUG
+`define BASIC_FREQUENCY 65 // 65MHz
 // ---------------------------------------------------------------------
 `define ALUop_and  4'b0000
 `define ALUop_or   4'b0001
@@ -23,6 +24,16 @@
 `define opcode_U_lui 7'b0110111
 `define opcode_U_auipc 7'b0010111
 `define opcode_I_csr 7'b1110011
+// ----------------------------------------------
+`define rd_sel_alu_output 3'b000
+`define rd_sel_dst_data 3'b001
+`define rd_sel_npc 3'b010
+`define rd_sel_csr 3'b011
+`define rd_sel_mul_low 3'b100
+`define rd_sel_mul_high 3'b101
+`define rd_sel_div 3'b110
+`define rd_sel_rem 3'b111
+
 // ----------------------------------------------
 
 `define branch_sel_beq 4'b1000

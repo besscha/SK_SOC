@@ -1,4 +1,4 @@
-`include "./module/param.vh"
+`include "param.vh"
 
 module soc(
     input logic clk,
@@ -18,16 +18,22 @@ module soc(
     assign flush_output = branch_en | EX_ecall;
 
     logic nop_load_use;
-    assign nop_load_use = (EX_rd_sel == 2'b01) && (EX_rd_addr == ID_rs1_addr || EX_rd_addr == ID_rs2_addr) && (EX_rd_we == 1'b1);
+    logic nop_multi_use;
+    assign nop_load_use = (EX_rd_sel == `rd_sel_dst_data) && (EX_rd_addr == ID_rs1_addr || EX_rd_addr == ID_rs2_addr) && (EX_rd_we == 1'b1);
+    assign nop_multi_use = (EX_multi_sel != 2'b10) && (EX_rd_addr == ID_rs1_addr || EX_rd_addr == ID_rs2_addr);
 
     pipeline_ctrl u_pipeline_ctrl(
         .nop_load_use       	(nop_load_use       ),
+        .nop_multi_use      	(nop_multi_use      ),
         .branch_en               	(branch_en               	),
         .EX_ecall               	(EX_ecall               	),
+        .divider_stall         	(divider_stall         	),
         .pc_stall               	(pc_stall              	),
         .if1_if2_stall              ( if1_if2_stall),
         .if2_id_stall               (if2_id_stall),
         .id_ex_stall                (id_ex_stall ),
+        .ex_men_stall               (ex_men_stall),
+        .men_wb_stall               (men_wb_stall),
         .Icache_stall               (Icache_stall),
         .if1_if2_flush              (if1_if2_flush),
         .if2_id_flush               (if2_id_flush),
@@ -127,7 +133,9 @@ module soc(
     logic [3:0] ID_branch_sel;
     logic ID_dst_write_we;
     logic [2:0] ID_dst_width;
-    logic [1:0] ID_rd_sel;
+    logic [2:0] ID_rd_sel;
+    logic [1:0] ID_multi_sel;
+    logic ID_divider_sel;
     logic [11:0] ID_csr_addr;
     logic ID_csr_we;
     logic [2:0] ID_csr_sel;
@@ -149,6 +157,8 @@ module soc(
         .dst_write_we 	(ID_dst_write_we  ),
         .dst_width 	(ID_dst_width  ),
         .rd_sel 	(ID_rd_sel  ),
+        .multi_sel 	(ID_multi_sel  ),
+        .divider_sel 	(ID_divider_sel  ),
         .csr_addr 	(ID_csr_addr  ),
         .csr_we    	(ID_csr_we     ),
         .csr_sel   	(ID_csr_sel    ),
@@ -223,6 +233,10 @@ module soc(
         .rd_addr_out 	(EX_rd_addr    	),
         .rd_sel     	(ID_rd_sel     	),
         .rd_sel_out  	(EX_rd_sel     	),
+        .multi_sel  	(ID_multi_sel  	),
+        .multi_sel_out	(EX_multi_sel  	),
+        .divider_sel 	(ID_divider_sel 	),
+        .divider_sel_out	(EX_divider_sel 	),
         .rs1        	(ID_rs1        	),
         .rs1_out    	(EX_rs1        	),
         .rs1_addr   	(ID_rs1_addr    ),
@@ -261,7 +275,9 @@ module soc(
     logic [3:0] EX_branch_sel;
     logic EX_dst_write_we;
     logic [2:0] EX_dst_width;
-    logic [1:0] EX_rd_sel;
+    logic [2:0] EX_rd_sel;
+    logic [1:0] EX_multi_sel;
+    logic EX_divider_sel;
     logic [4:0] EX_rd_addr;
     logic [31:0] EX_rs1;
     logic [4:0] EX_rs1_addr;
@@ -343,10 +359,41 @@ module soc(
         .dst_write_we_out  	(dst_write_we  	)
     );
 
+    multiplier u_multiplier(
+        .clk       	(clk        ),
+        .rst       	(rst        ),
+        .symbolic  	(EX_multi_sel 	),
+        .x         	(alu_rs1    ),
+        .y         	(alu_rs2    ),
+        .p         	(MEN_multiplier_output)
+    );
+    
+    logic [31:0] MEN_quotient_output;
+    logic [31:0] MEN_remainder_output;
+    logic divider_start;
+    assign divider_start = (EX_rd_sel == `rd_sel_div || EX_rd_sel == `rd_sel_rem) ? 1'b1 : 1'b0;
+    logic divider_stall;
+
+    divider u_divider(
+        .clk              	(clk               ),
+        .rst              	(rst               ),
+        .dividend_input   	(alu_rs1    ),
+        .divisor_input    	(alu_rs2     ),
+        .sign             	(EX_divider_sel              ),
+        .start            	(divider_start             ),
+        .quotient_output  	(MEN_quotient_output   ),
+        .remainder_output 	(MEN_remainder_output  ),
+        .stall             	(divider_stall              )
+    );
+    
+
     //--------------------------------------
+    logic ex_men_stall;
+
     ex_men u_ex_men(
         .clk              	(clk               ),
         .rst              	(rst               ),
+        .stall            	(ex_men_stall       ),
         .pc               	(EX_pc                ),
         .pc_out             (MEN_pc             ),
         .npc              	(EX_npc               ),
@@ -382,10 +429,12 @@ module soc(
     logic [31:0] MEN_npc;
     logic [2:0] MEN_dst_width;
     logic MEN_rd_we;
-    logic [1:0] MEN_rd_sel;
+    logic [2:0] MEN_rd_sel;
     logic [4:0] MEN_rd_addr;
 
     logic MEN_ecall;
+
+    logic [63:0] MEN_multiplier_output;
 
     read_ctrl u_read_ctrl(
         .dst_read_data       (dst_read_data),
@@ -401,10 +450,12 @@ module soc(
     logic [31:0] MEN_csr_rdata;
 
     //--------------------------------------
+    logic men_wb_stall;
 
     men_wb u_men_wb(
         .clk         	(clk          ),
         .rst         	(rst          ),
+        .stall          (men_wb_stall          ),
         .rd_addr        (MEN_rd_addr        ),
         .rd_addr_out    (WB_rd_addr    ),
         .rd_en          (MEN_rd_we          ),
@@ -413,6 +464,12 @@ module soc(
         .dst_data_out   (WB_dst_data   ),
         .rd_sel      	(MEN_rd_sel       ),
         .rd_sel_out  	(WB_rd_sel   ),
+        .multiplier_output(MEN_multiplier_output),
+        .multiplier_output_out(WB_multiplier_output),
+        .divider_quotient(MEN_quotient_output),
+        .divider_quotient_out(WB_quotient_output),
+        .divider_remainder(MEN_remainder_output),
+        .divider_remainder_out(WB_remainder_output),
         .alu_out     	(MEN_alu_output      ),
         .alu_out_out 	(WB_alu_output  ),
         .pc             (MEN_pc             ),
@@ -434,7 +491,7 @@ module soc(
     //--------------------------------------
     // WB
     
-    logic [1:0] WB_rd_sel;
+    logic [2:0] WB_rd_sel;
     logic [31:0] WB_alu_output;
     logic [31:0] WB_dst_data;
     logic [31:0] WB_pc;
@@ -447,16 +504,32 @@ module soc(
     logic [11:0] WB_csr_addr;
     logic [31:0] WB_csr_wdata;
 
+    logic [63:0] WB_multiplier_output;
+    logic [31:0] multiplier_output_low;
+    logic [31:0] multiplier_output_high;
+    assign multiplier_output_low = WB_multiplier_output[31:0];
+    assign multiplier_output_high = WB_multiplier_output[63:32];
+    logic [31:0] WB_quotient_output;
+    logic [31:0] WB_remainder_output;
+
     always_comb begin
         case(WB_rd_sel)
-            2'b00:
+            `rd_sel_alu_output:
                 rd = WB_alu_output;
-            2'b01:
+            `rd_sel_dst_data:
                 rd = WB_dst_data;
-            2'b10:
+            `rd_sel_npc:
                 rd = WB_npc;
-            2'b11:
+            `rd_sel_csr:
                 rd = WB_csr_rdata;
+            `rd_sel_mul_low:
+                rd = multiplier_output_low;
+            `rd_sel_mul_high:
+                rd = multiplier_output_high;
+            `rd_sel_div:
+                rd = WB_quotient_output;
+            `rd_sel_rem:
+                rd = WB_remainder_output;
             default:
                 rd = WB_alu_output;
         endcase

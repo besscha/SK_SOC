@@ -1,5 +1,4 @@
-`include "module/param.vh"
-
+`include "param.vh"
 module id_ex(
     input logic clk,
     input logic rst,
@@ -23,8 +22,12 @@ module id_ex(
     output logic dst_write_we_out,
     input logic [2:0] dst_width,
     output logic [2:0] dst_width_out,
-    input logic [1:0] rd_sel,
-    output logic [1:0] rd_sel_out,
+    input logic [2:0] rd_sel,
+    output logic [2:0] rd_sel_out,
+    input logic [1:0] multi_sel,
+    output logic [1:0] multi_sel_out,
+    input logic divider_sel,
+    output logic divider_sel_out,
     input logic [4:0] rd_addr,
     output logic [4:0] rd_addr_out,
     input logic [31:0] rs1,
@@ -65,7 +68,9 @@ module id_ex(
             branch_sel_out <= 4'b0;
             dst_write_we_out <= 1'b0;
             dst_width_out <= 3'b0;
-            rd_sel_out <= 2'b0;
+            rd_sel_out <= 3'b0;
+            multi_sel_out <= 2'b10;
+            divider_sel_out <= 1'b0;
             rs1_out <= 32'h0;
             rs1_addr_out <= 5'h0;
             rs2_out <= 32'h0;
@@ -80,31 +85,7 @@ module id_ex(
             csr_zimm_out <= 5'b0;
             ecall_out <= 1'b0;
             mret_out <= 1'b0;
-        end else if (stall) begin
-            rd_we_out <= rd_we_out;
-            imm_out <= imm_out;
-            alu_op_out <= alu_op_out;
-            alu_input1_sel_out <= alu_input1_sel_out;
-            alu_input2_sel_out <= alu_input2_sel_out;
-            branch_sel_out <= branch_sel_out;
-            dst_write_we_out <= dst_write_we_out;
-            dst_width_out <= dst_width_out;
-            rd_sel_out <= rd_sel_out;
-            rs1_out <= rs1_out;
-            rs1_addr_out <= rs1_addr_out;
-            rs2_out <= rs2_out;
-            rs2_addr_out <= rs2_addr_out;
-            pc_out <= pc_out;
-            npc_out <= npc_out;
-            rd_addr_out <= rd_addr_out;
-            csr_addr_out <= csr_addr_out;
-            csr_we_out <= csr_we_out;
-            csr_sel_out <= csr_sel_out;
-            csr_rdata_out <= csr_rdata_out;
-            csr_zimm_out <= csr_zimm_out;
-            ecall_out <= ecall_out;
-            mret_out <= mret_out;
-        end else begin
+        end else if (!stall) begin
             rd_we_out <= rd_we;
             imm_out <= imm;
             alu_op_out <= alu_op;
@@ -114,6 +95,8 @@ module id_ex(
             dst_write_we_out <= dst_write_we;
             dst_width_out <= dst_width;
             rd_sel_out <= rd_sel;
+            multi_sel_out <= multi_sel;
+            divider_sel_out <= divider_sel;
             rs1_out <= rs1;
             rs1_addr_out <= rs1_addr;
             rs2_out <= rs2;

@@ -1,4 +1,4 @@
-`include "./module/param.vh"
+`include "param.vh"
 
 module read_ctrl(
     input logic [31:0] dst_read_data,

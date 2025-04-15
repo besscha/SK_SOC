@@ -1,3 +1,5 @@
+`include "param.vh"
+
 module send(
     input clk,
     input rst,
@@ -10,7 +12,7 @@ module send(
     );
 
     //localparam FullT = 867;
-    localparam FullT = 10416;
+    localparam FullT = 10416 * `BASIC_FREQUENCY / 100; // 10416 is the baud rate, 65MHz is the clock frequency
     localparam TOTAL_BITS = 9;
     logic [15:0] div_cnt;          
     logic [4:0] dout_cnt;

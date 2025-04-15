@@ -1,3 +1,5 @@
+`include "param.vh"
+
 module receive(
     input clk,
     input rst,
@@ -8,8 +10,8 @@ module receive(
     output logic [7:0] din_data
     );
 
-    localparam FullT = 10416;
-    localparam HalfT = 5208;
+    localparam FullT = 10416 * `BASIC_FREQUENCY / 100;
+    localparam HalfT = 5208 * `BASIC_FREQUENCY / 100;
     localparam TOTAL_BITS = 8;
 
     logic [15:0] div_cnt;

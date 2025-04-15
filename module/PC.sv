@@ -1,4 +1,4 @@
-`include "./module/param.vh"
+`include "param.vh"
 
 module PC(
     input clk,

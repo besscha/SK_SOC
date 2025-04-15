@@ -2,17 +2,24 @@
 module men_wb(
     input logic clk,
     input logic rst,
+    input logic stall,
 
     input logic [4:0] rd_addr,
     output logic [4:0] rd_addr_out,
     input logic rd_en,
     output logic rd_en_out,
-    input logic [1:0] rd_sel,
-    output logic [1:0] rd_sel_out,
+    input logic [2:0] rd_sel,
+    output logic [2:0] rd_sel_out,
     input logic [31:0] dst_data,
     output logic [31:0] dst_data_out,
     input logic [31:0] alu_out,
     output logic [31:0] alu_out_out,
+    input logic [63:0] multiplier_output,
+    output logic [63:0] multiplier_output_out,
+    input logic [31:0] divider_quotient,
+    output logic [31:0] divider_quotient_out,
+    input logic [31:0] divider_remainder,
+    output logic [31:0] divider_remainder_out,
     input logic [31:0] pc,
     output logic [31:0] pc_out,
     input logic [31:0] npc,
@@ -31,9 +38,12 @@ module men_wb(
 
     always_ff @(posedge clk) begin
         if (rst) begin
-            rd_sel_out <= 2'b0;
+            rd_sel_out <= 3'b0;
             dst_data_out <= 32'b0;
             alu_out_out <= 32'b0;
+            multiplier_output_out <= 64'b0;
+            divider_quotient_out <= 32'b0;
+            divider_remainder_out <= 32'b0;
             pc_out <= 32'h8000_0000;
             npc_out <= 32'h8000_0000;
             rd_addr_out <= 5'b0;
@@ -43,10 +53,13 @@ module men_wb(
             csr_addr_out <= 12'b0;
             csr_wdata_out <= 32'b0;
             ecall_out <= 1'b0;
-        end else begin
+        end else if (!stall) begin
             rd_sel_out <= rd_sel;
             dst_data_out <= dst_data;
             alu_out_out <= alu_out;
+            multiplier_output_out <= multiplier_output;
+            divider_quotient_out <= divider_quotient;
+            divider_remainder_out <= divider_remainder;
             pc_out <= pc;
             npc_out <= npc;
             rd_addr_out <= rd_addr;

@@ -1,4 +1,4 @@
-`include "./module/param.vh"
+`include "param.vh"
 
 module CSR(
     input logic clk, // Clock signal
@@ -33,7 +33,7 @@ module CSR(
     assign mcpuid = `mcpuid; // Assign machine CPU ID
     assign mimpid = `mimpid; // Assign machine IMP ID
 
-    always_comb begin
+    always@(*) begin
         case(csr_addr)
             `mcpuid_addr : csr_rdata = mcpuid; // Read machine CPU ID
             `mimpid_addr : csr_rdata = mimpid; // Read machine IMP ID

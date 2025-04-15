@@ -1,4 +1,4 @@
-`include "./module/param.vh"
+`include "param.vh"
 
 module decoder(
     input logic [31:0] ist,
@@ -21,7 +21,10 @@ module decoder(
     output logic dst_write_we,
     output logic [2:0] dst_width,
 
-    output logic [1:0] rd_sel,
+    output logic [2:0] rd_sel,
+
+    output logic [1:0] multi_sel,
+    output logic       divider_sel,
 
     output logic [11:0] csr_addr,
     output logic csr_we,
@@ -73,17 +76,29 @@ module decoder(
     always_comb begin
         case(opcode)
             `opcode_I_ld:begin
-                rd_sel = 2'b01;
+                rd_sel = `rd_sel_dst_data;
             end
             `opcode_J,
             `opcode_I_jair:begin
-                rd_sel = 2'b10;
+                rd_sel = `rd_sel_npc;
             end
             `opcode_I_csr:begin
-                rd_sel = 2'b11;
+                rd_sel = `rd_sel_csr;
+            end
+            `opcode_R:begin
+                rd_sel = funct7 != 7'b0000001 ? `rd_sel_alu_output :
+                         funct3 == 3'h0 ? `rd_sel_mul_low :      //MUL
+                         funct3 == 3'h1 ? `rd_sel_mul_high :      //MULH
+                         funct3 == 3'h2 ? `rd_sel_mul_high :      //MULHSU
+                         funct3 == 3'h3 ? `rd_sel_mul_high :      //MULHU 
+                         funct3 == 3'h4 ? `rd_sel_div :           //DIV
+                         funct3 == 3'h5 ? `rd_sel_div :           //DIVU
+                         funct3 == 3'h6 ? `rd_sel_rem :           //REM
+                         funct3 == 3'h7 ? `rd_sel_rem  :           //REMU
+                         `rd_sel_alu_output; 
             end
             default:begin
-                rd_sel = 2'b00;
+                rd_sel = `rd_sel_alu_output;
             end
         endcase
     end
@@ -291,4 +306,17 @@ module decoder(
 
     assign ecall = (ist == `ecall_ist) ? 1'b1 : 1'b0;
     assign mret = (ist == `mret_ist ) ? 1'b1 : 1'b0;
+    assign multi_sel = (opcode == `opcode_R) && (funct7 == 7'h1) ? 
+                        (funct3 == 3'h0) ? 2'b11 : //MUL
+                        (funct3 == 3'h1) ? 2'b11 : //MULH
+                        (funct3 == 3'h2) ? 2'b01 : //MULHSU
+                        (funct3 == 3'h3) ? 2'b00 : //MULHU
+                        2'b10 : 2'b10;
+    assign divider_sel = (opcode == `opcode_R) && (funct7 == 7'h1) ? 
+                        (funct3 == 3'h4) ? 1'b1 : //DIV
+                        (funct3 == 3'h5) ? 1'b0 : //DIVU
+                        (funct3 == 3'h6) ? 1'b1 : //REM
+                        (funct3 == 3'h7) ? 1'b0 : //REMU
+                        1'b0 : 1'b0;
+  
 endmodule
