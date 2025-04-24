@@ -20,10 +20,10 @@ module PC(
     always_ff @(posedge clk) begin
         if(rst) begin
             pc_reg <= 32'h8000_0000;
-        end else if(stall) begin
-            pc_reg <= pc_reg;
         end else if(branch_en) begin
             pc_reg <= branch_pc;
+        end else if(stall) begin
+            pc_reg <= pc_reg;
         end else begin
             pc_reg <= npc;
         end        

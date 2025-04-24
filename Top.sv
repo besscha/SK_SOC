@@ -18,12 +18,12 @@ module Top(
     logic [3:0]  dst_write_we;
     logic flush;
     //logic nop;
+    AXI icache_axi();
     
     soc u_soc(
         .clk            	(clk             ),
         .rst            	(rst             ),
-        .ist_addr       	(ist_addr        ),
-        .ist_data       	(ist_data        ),
+        .icache_axi          (icache_axi.MASTER         ),      
         .flush_output              (flush),
         //.nop_output       (nop       ),
         .dst_addr       	(dst_addr        ),
@@ -32,36 +32,12 @@ module Top(
         .dst_write_we   	(dst_write_we    )
     );
 
-    bus u_bus(
-        .clk            	(clk             ),
-        .soc_addr       	(dst_addr        ),
-        .soc_read_data   	(dst_read_data    ),
-        .soc_write_we    	(dst_write_we     ),
-
-        .slave1_read_data  (slave1_read_data   ),
-        .slave1_write_we   (slave1_write_we    ),
-        .slave2_read_data  (slave2_read_data   ),
-        .slave2_write_we   (slave2_write_we    )
-    );
-
-    logic [31:0] slave1_read_data;
-    logic [3:0] slave1_write_we;
-    logic [31:0] slave2_read_data;
-    logic [3:0] slave2_write_we;
-
     bram u_bram(
         .clk            	(clk             ),
-        .a              	(dst_addr[19:0]       ),
-        .d              	(dst_write_data  ),
-        .we             	(slave1_write_we    ),
-        .spo            	(slave1_read_data   ),
-        .dpra           	(ist_addr[19:0]        ),
-        .dpo            	(ist_data        ),
-        .flush              (flush           )
-        //.nop            	(nop            )
+        .axi            	(icache_axi.SLAVER         )
     );
 
-    logic uart_din_vld;
+    /* logic uart_din_vld;
     logic [7:0] uart_din_data;
     logic [7:0] uart_dout_data;
     logic uart_dout_vld;
@@ -83,40 +59,74 @@ module Top(
         .uart_dout_vld(uart_dout_vld),
         .uart_dout_end(uart_dout_end),
         .mtime_input(mtime)
-    );
+    ); */
 
 
 
 endmodule
 /* verilator lint_off DECLFILENAME */
 /* verilator lint_off WIDTHEXPAND */
-module bram #(
-    parameter int WIDTH = 32,
-    parameter int DEPTH = 20
-)(
+module bram (
     input logic clk,
-    input logic [DEPTH-1:0] a,
-    input logic [WIDTH-1:0] d,
-    input logic [3:0] we,             
-    output logic [WIDTH-1:0] spo,
-    input logic flush,
-    //input logic nop,
-
-    input logic [DEPTH-1:0] dpra,
-    output logic [WIDTH-1:0] dpo
+    AXI axi
 );
 
-    always_ff @(posedge clk) begin
-        dpo <= pmem_read(!flush, dpra);
-    end
+    assign axi.rid = axi.arid;
+
+    enum logic {
+        IDLE,
+        READ
+    } read_state=IDLE, next_read_state;
 
     always_ff @(posedge clk) begin
-        spo <= pmem_read(1'b1, a); 
+        read_state <= next_read_state;
     end
 
-    always_ff @(posedge clk) begin
-        pmem_write({28'b0,we}, a, d);
+    always_comb begin
+        next_read_state = read_state;
+        case (read_state)
+            IDLE: begin
+                if (axi.arvalid) begin
+                    next_read_state = READ;
+                end
+            end
+            READ: begin
+                if (axi.rlast) begin
+                    next_read_state = IDLE;
+                end
+            end
+        endcase
     end
+    logic [31:0] addr_reg;
+    logic [31:0] addr_reg_end;
+
+    always_ff @(posedge clk) begin
+        if(read_state == IDLE) begin
+            axi.rlast <= 1'b0;
+            if (axi.arvalid) begin
+                axi.arready <= 1'b1;
+                addr_reg <= axi.araddr;
+                addr_reg_end <= axi.araddr + axi.arlen * (1 << axi.arsize);
+                axi.rvalid <= 1'b1;
+            end 
+        end else if(read_state == READ) begin
+            if (axi.rready) begin
+                if (addr_reg < addr_reg_end) begin
+                    axi.rvalid <= 1'b1;
+                    addr_reg <= addr_reg + 4;
+                end else begin
+                    axi.rvalid <= 1'b0;
+                    axi.rlast <= 1'b1;
+                end
+            end
+        end
+    end
+
+    always_comb begin
+        axi.rdata = pmem_read(1,addr_reg[19:2]);
+    end
+
+    
 
 endmodule
 

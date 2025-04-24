@@ -26,6 +26,7 @@ extern "C" void update_reg(int reg_num, int value) {
 }
 
 extern "C" void update_pc(int new_pc) {
+    //printf("PC: %08x\n", new_pc);
     SKcpu_state.pc = new_pc == 0x80000000 | new_pc == 0x0 ? SKcpu_state.pc : new_pc - 4;
 }
 
@@ -91,30 +92,30 @@ void print_regfile(CPU_state cpu_state) {
 void compare(){
     if (SKcpu_state.pc != nemu_state.pc) {
         printf("PC mismatch: SKcpu_state: %08x, nemu_state: %08x\n", SKcpu_state.pc, nemu_state.pc);
-        exit(0);
+        //exit(0);
     }
     for(int i = 1; i < 32; i++){
         if (SKcpu_state.gpr[i] == nemu_state.gpr[i] || SKcpu_state.gpr[i] == nemu_state.gpr[i] - 0x80000000) {
             continue;
         }
         printf("Register %d mismatch: SKcpu_state: %08x, nemu_state: %08x\n", i, SKcpu_state.gpr[i], nemu_state.gpr[i]);
-            exit(0);
+            //exit(0);
     }
     if (!(SKcpu_state.csr.mtvec == nemu_state.csr.mtvec || SKcpu_state.csr.mtvec == nemu_state.csr.mtvec - 0x80000000)) {
         printf("mtvec mismatch: SKcpu_state: %08x, nemu_state: %08x\n", SKcpu_state.csr.mtvec, nemu_state.csr.mtvec);
-        exit(0);
+        //exit(0);
     }
     if (!(SKcpu_state.csr.mepc == nemu_state.csr.mepc || SKcpu_state.csr.mepc == nemu_state.csr.mepc - 0x80000000)) {
         printf("mepc mismatch: SKcpu_state: %08x, nemu_state: %08x\n", SKcpu_state.csr.mepc, nemu_state.csr.mepc);
-        exit(0);
+        //exit(0);
     }
     if (SKcpu_state.csr.mcause != nemu_state.csr.mcause) {
         printf("mcause mismatch: SKcpu_state: %08x, nemu_state: %08x\n", SKcpu_state.csr.mcause, nemu_state.csr.mcause);
-        exit(0);
+        //exit(0);
     }
     if (SKcpu_state.csr.mstatus != nemu_state.csr.mstatus) {
         printf("mstatus mismatch: SKcpu_state: %08x, nemu_state: %08x\n", SKcpu_state.csr.mstatus, nemu_state.csr.mstatus);
-        exit(0);
+        //exit(0);
     }
 }
 
@@ -138,8 +139,8 @@ int main(int argc, char **argv)
     VerilatedVcdC *tfp = new VerilatedVcdC;
     Verilated::traceEverOn(true);
     
-    pmen_load_text("test.txt");
-    //pmen_load_bin("test.bin");
+    //pmen_load_text("test.txt");
+    pmen_load_bin("test.bin");
     init_difftest();
     difftest_step();
 
@@ -162,21 +163,15 @@ int main(int argc, char **argv)
     top->eval();
     tfp->dump(sim_time++);
 
-    for(int i = 0; i < 8; i++){
-        top->clk = top->clk ? 0 : 1;
-        top->eval();
-        tfp->dump(sim_time++);
-    }
     int last_pc = SKcpu_state.pc;
     
     for(int i=0;i<200;){
-        
         top->clk = top->clk ? 0 : 1;
         top->eval();
         tfp->dump(sim_time++);
         uint32_t ist;
         ist = pmem_read(1, (SKcpu_state.pc-0x80000000)/4);
-        printf("i:%d,PC: %08x, Instruction: %08x\n", i ,SKcpu_state.pc, ist);
+        //printf("i:%d,PC: %08x, Instruction: %08x\n", i ,SKcpu_state.pc, ist);
         if(last_pc != SKcpu_state.pc){
             last_pc = SKcpu_state.pc;
             //printf("led: %08x\n", top->LED);

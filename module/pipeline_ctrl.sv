@@ -4,6 +4,7 @@ module pipeline_ctrl(
     input logic branch_en,
     input logic EX_ecall,
     input logic divider_stall,
+    input logic Icache_miss,
 
     output logic pc_stall,
     output logic if1_if2_stall,
@@ -18,17 +19,17 @@ module pipeline_ctrl(
     output logic Icache_flush
 );
 
-    assign pc_stall = nop_load_use || nop_multi_use || divider_stall;
+    assign pc_stall = nop_load_use || nop_multi_use || divider_stall || Icache_miss;
     assign Icache_stall = nop_load_use || nop_multi_use || divider_stall;
-    assign if1_if2_stall = nop_load_use || nop_multi_use || divider_stall;
+    assign if1_if2_stall = nop_load_use || nop_multi_use || divider_stall || Icache_miss;
     assign if2_id_stall = nop_load_use || nop_multi_use || divider_stall;
     assign id_ex_stall = divider_stall;
     assign ex_men_stall = divider_stall;
     assign men_wb_stall = 1'b0;
 
     assign if1_if2_flush = branch_en || EX_ecall;
-    assign if2_id_flush = branch_en || EX_ecall;
-    assign id_ex_flush = branch_en || EX_ecall || nop_load_use || nop_multi_use;
+    assign if2_id_flush = branch_en || EX_ecall || (Icache_miss && !if2_id_stall);
+    assign id_ex_flush = branch_en || EX_ecall || (nop_load_use || nop_multi_use && !id_ex_stall);
     assign Icache_flush = branch_en || EX_ecall;
 
 endmodule

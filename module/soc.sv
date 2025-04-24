@@ -7,8 +7,7 @@ module soc(
     output logic flush_output,
     //output logic nop_output,
 
-    output logic [29:0] ist_addr,
-    input logic [31:0] ist_data,
+    AXI  icache_axi,
 
     output logic [29:0] dst_addr,
     output logic [31:0] dst_write_data,
@@ -28,6 +27,7 @@ module soc(
         .branch_en               	(branch_en               	),
         .EX_ecall               	(EX_ecall               	),
         .divider_stall         	(divider_stall         	),
+        .Icache_miss          	(Icache_miss          	),
         .pc_stall               	(pc_stall              	),
         .if1_if2_stall              ( if1_if2_stall),
         .if2_id_stall               (if2_id_stall),
@@ -60,8 +60,6 @@ module soc(
         .npc       	(IF1_npc        )
     );
 
-    assign ist_addr = IF1_pc[31:2];
-
     //---------------------------------
     
     logic if1_if2_stall;
@@ -85,14 +83,17 @@ module soc(
     logic [31:0] IF2_ist_data;
     logic Icache_stall;
     logic Icache_flush;
+    logic Icache_miss;
     
     Icache u_Icache(
         .clk          	(clk           ),
         .rst          	(rst           ),
         .flush        	(Icache_flush         ),
         .stall          (Icache_stall           ),
-        .ist_data     	(ist_data      ),
-        .IF2_ist_data 	(IF2_ist_data  )
+        .addr           (IF1_pc),
+        .data           (IF2_ist_data),
+        .Icache_miss     (Icache_miss     ),
+        .axi_if          (icache_axi      )
     );
     
 
