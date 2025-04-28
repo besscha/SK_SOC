@@ -1,17 +1,18 @@
 `include "param.vh"
 
 module Dcache(
-    input logic [31:0] rs2,
-    input logic [1:0] addr,
-    input logic [2:0] dst_width,
-    input logic dst_write_we,
+
+    Dcache_if Dcache_if,
 
     output logic [31:0] data_out,
-    output logic [3:0] dst_write_we_out
+    output logic [3:0] write_we_out
 );
 
+    logic [1:0] addr;
+    assign addr = Dcache_if.dst_addr[1:0];
+
     logic [3:0] write_we;
-    assign dst_write_we_out = dst_write_we ? write_we : 4'b0000;
+    assign write_we_out = Dcache_if.dst_write_we ? write_we : 4'b0000;
 
     logic [3:0]  write_we_byte;
     logic [31:0] data_out_byte;
@@ -19,19 +20,19 @@ module Dcache(
         case (addr)
             2'd0: begin
                 write_we_byte = 4'b0001;
-                data_out_byte = {24'b0, rs2[7:0]};
+                data_out_byte = {24'b0, Dcache_if.dst_write_data[7:0]};
             end
             2'd1: begin
                 write_we_byte = 4'b0010;
-                data_out_byte = {16'b0, rs2[7:0], 8'b0};
+                data_out_byte = {16'b0, Dcache_if.dst_write_data[7:0], 8'b0};
             end
             2'd2: begin
                 write_we_byte = 4'b0100;
-                data_out_byte = {8'b0, rs2[7:0], 16'b0};
+                data_out_byte = {8'b0, Dcache_if.dst_write_data[7:0], 16'b0};
             end
             2'd3: begin
                 write_we_byte = 4'b1000;
-                data_out_byte = {rs2[7:0], 24'b0};
+                data_out_byte = {Dcache_if.dst_write_data[7:0], 24'b0};
             end
         endcase
     end
@@ -43,11 +44,11 @@ module Dcache(
         case (addr[1])
             1'b0: begin
                 write_we_half = 4'b0011;
-                data_out_half = {16'b0, rs2[15:0]};
+                data_out_half = {16'b0, Dcache_if.dst_write_data[15:0]};
             end
             1'b1: begin
                 write_we_half = 4'b1100;
-                data_out_half = {rs2[15:0], 16'b0};
+                data_out_half = {Dcache_if.dst_write_data[15:0], 16'b0};
             end 
         endcase
     end
@@ -55,10 +56,10 @@ module Dcache(
     logic [3:0] write_we_word;
     assign write_we_word = 4'b1111;
     logic [31:0] data_out_word;
-    assign data_out_word = rs2;
+    assign data_out_word = Dcache_if.dst_write_data;
 
     always_comb begin
-        case(dst_width)
+        case(Dcache_if.dst_width)
             `data_width_byte: begin
                 write_we = write_we_byte;
                 data_out = data_out_byte;

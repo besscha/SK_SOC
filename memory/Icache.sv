@@ -7,8 +7,8 @@ module Icache(
     input logic flush,
     input logic stall,
 
-    input logic [31:0]  ist_data,
-    output logic [31:0] IF2_ist_data
+    input logic [31:0]  ist_data_in,
+    output logic [31:0] ist_data
 );
 
     logic [31:0] ist_data_reg;
@@ -21,7 +21,7 @@ module Icache(
         end else if (stall_reg) begin
             ist_data_reg <= ist_data_reg;
         end else begin
-            ist_data_reg <= ist_data;
+            ist_data_reg <= ist_data_in;
         end
     end
 
@@ -32,11 +32,11 @@ module Icache(
 
     always_comb begin
         if (flush_reg) begin
-            IF2_ist_data = `nop;
+            ist_data = `nop;
         end else if (stall_reg) begin
-            IF2_ist_data = ist_data_reg;
+            ist_data = ist_data_reg;
         end else begin
-            IF2_ist_data = ist_data;
+            ist_data = ist_data_in;
         end
     end
 

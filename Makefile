@@ -1,9 +1,13 @@
 .DEFAULT_GOAL := VTop
 
-OBJ = $(wildcard ./module/*.*)
+OBJ = $(wildcard ./soc/*.*)
+OBJ += $(wildcard ./memory/*.*)
+OBJ += Top.sv
+OBJ += interface.sv
 
-./obj_dir/VTop: Top.sv test.cpp $(OBJ) RAM.cpp Makefile
-	verilator -Wall Top.sv test.cpp ./nemu/nemu.c -I $(OBJ) -DDIFF -cc -LDFLAGS " -ldl -L ./nemu/riscv32-nemu-interpreter-so" --exe --trace --top-module Top
+
+./obj_dir/VTop: $(OBJ) test.cpp RAM.cpp Makefile
+	verilator -Wall test.cpp ./nemu/nemu.c -I $(OBJ) -DDIFF -cc -LDFLAGS " -ldl -L ./nemu/riscv32-nemu-interpreter-so" --exe --trace --top-module Top
 	# verilator --gdbbt -Wall Top.sv test.cpp ./nemu/nemu.c -I $(OBJ) -DDIFF -cc -CFLAGS "-g" -LDFLAGS "-g -ldl -L ./nemu/riscv32-nemu-interpreter-so" --exe --trace --top-module Top
 	make -C obj_dir -f VTop.mk
 

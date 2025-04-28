@@ -9,33 +9,45 @@ module Top(
     input logic [15:0] SW,
     output logic [15:0] LED
 );
-
-    logic [29:0] ist_addr;
     logic [31:0] ist_data;
-    logic [29:0] dst_addr;
+
     logic [31:0] dst_write_data;
-    logic [31:0] dst_read_data;
     logic [3:0]  dst_write_we;
     logic flush;
+
+    Icache_if Icache_if();
+    Dcache_if Dcache_if();
     //logic nop;
     
     soc u_soc(
         .clk            	(clk             ),
         .rst            	(rst             ),
-        .ist_addr       	(ist_addr        ),
-        .ist_data       	(ist_data        ),
-        .flush_output              (flush),
-        //.nop_output       (nop       ),
-        .dst_addr       	(dst_addr        ),
-        .dst_write_data 	(dst_write_data  ),
-        .dst_read_data  	(dst_read_data   ),
-        .dst_write_we   	(dst_write_we    )
+        .Icache_if     	    (Icache_if.master      ),
+        .Dcache_if     	    (Dcache_if.master      )
     );
+    
+    assign Icache_if.Icache_miss = 1'b0;
+    Icache u_Icache(
+        .clk          	(clk           ),
+        .rst          	(rst           ),
+        .flush        	(Icache_if.slave.flush         ),
+        .stall        	(Icache_if.slave.stall         ),
+        .ist_data_in    (ist_data      ),
+        .ist_data 	    (Icache_if.slave.ist_data  )
+    );
+
+    assign Dcache_if.Dcache_miss = 1'b0;
+    Dcache u_Dcache(
+        .Dcache_if     	(Dcache_if.slave      ),
+        .data_out      	(dst_write_data       ),
+        .write_we_out   	(dst_write_we        )
+    );
+    
 
     bus u_bus(
         .clk            	(clk             ),
-        .soc_addr       	(dst_addr        ),
-        .soc_read_data   	(dst_read_data    ),
+        .soc_addr       	(Dcache_if.slave.dst_addr[31:2]    ),
+        .soc_read_data   	(Dcache_if.slave.dst_read_data    ),
         .soc_write_we    	(dst_write_we     ),
 
         .slave1_read_data  (slave1_read_data   ),
@@ -51,14 +63,13 @@ module Top(
 
     bram u_bram(
         .clk            	(clk             ),
-        .a              	(dst_addr[19:0]       ),
+        .a              	(Dcache_if.slave.dst_addr[21:2]),
         .d              	(dst_write_data  ),
         .we             	(slave1_write_we    ),
         .spo            	(slave1_read_data   ),
-        .dpra           	(ist_addr[19:0]        ),
+        .dpra           	(Icache_if.slave.ist_addr[21:2]),
         .dpo            	(ist_data        ),
-        .flush              (flush           )
-        //.nop            	(nop            )
+        .flush              (Icache_if.slave.flush)
     );
 
     logic uart_din_vld;
@@ -72,7 +83,7 @@ module Top(
         .clk(clk),
         .rst(rst),
         .we(slave2_write_we),
-        .addr(dst_addr[3:0]),
+        .addr(Dcache_if.slave.dst_addr[3:0]),
         .din(dst_write_data),
         .dout(slave2_read_data),
         .led(LED),

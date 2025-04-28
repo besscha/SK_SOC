@@ -4,19 +4,9 @@ module soc(
     input logic clk,
     input logic rst,
 
-    output logic flush_output,
-    //output logic nop_output,
-
-    output logic [29:0] ist_addr,
-    input logic [31:0] ist_data,
-
-    output logic [29:0] dst_addr,
-    output logic [31:0] dst_write_data,
-    input logic [31:0] dst_read_data,
-    output logic [3:0] dst_write_we
+    Icache_if Icache_if,
+    Dcache_if Dcache_if
 );
-    assign flush_output = branch_en | EX_ecall;
-
     logic nop_load_use;
     logic nop_multi_use;
     assign nop_load_use = (EX_rd_sel == `rd_sel_dst_data) && (EX_rd_addr == ID_rs1_addr || EX_rd_addr == ID_rs2_addr) && (EX_rd_we == 1'b1);
@@ -28,6 +18,9 @@ module soc(
         .branch_en               	(branch_en               	),
         .EX_ecall               	(EX_ecall               	),
         .divider_stall         	(divider_stall         	),
+        .Icache_miss         	(Icache_if.Icache_miss         	),
+        .Dcache_miss         	(Dcache_if.Dcache_miss         	),
+
         .pc_stall               	(pc_stall              	),
         .if1_if2_stall              ( if1_if2_stall),
         .if2_id_stall               (if2_id_stall),
@@ -35,6 +28,7 @@ module soc(
         .ex_men_stall               (ex_men_stall),
         .men_wb_stall               (men_wb_stall),
         .Icache_stall               (Icache_stall),
+        
         .if1_if2_flush              (if1_if2_flush),
         .if2_id_flush               (if2_id_flush),
         .id_ex_flush                (id_ex_flush ),
@@ -60,7 +54,7 @@ module soc(
         .npc       	(IF1_npc        )
     );
 
-    assign ist_addr = IF1_pc[31:2];
+    assign Icache_if.ist_addr = IF1_pc;
 
     //---------------------------------
     
@@ -85,16 +79,10 @@ module soc(
     logic [31:0] IF2_ist_data;
     logic Icache_stall;
     logic Icache_flush;
-    
-    Icache u_Icache(
-        .clk          	(clk           ),
-        .rst          	(rst           ),
-        .flush        	(Icache_flush         ),
-        .stall          (Icache_stall           ),
-        .ist_data     	(ist_data      ),
-        .IF2_ist_data 	(IF2_ist_data  )
-    );
-    
+
+    assign Icache_if.flush = Icache_flush;
+    assign Icache_if.stall = Icache_stall;
+    assign IF2_ist_data = Icache_if.ist_data;
 
     //---------------------------------
 
@@ -349,15 +337,19 @@ module soc(
         .csr_wdata 	(EX_csr_wdata  )
     );
     
-    assign dst_addr = EX_alu_output[31:2];
-    Dcache u_Dcache(
-        .rs2       	(alu_rs2        	),
-        .addr      	(EX_alu_output[1:0]      	),
-        .dst_width 	(EX_dst_width 	),
-        .data_out 	(dst_write_data 	),
-        .dst_write_we(EX_dst_write_we 	),
-        .dst_write_we_out  	(dst_write_we  	)
-    );
+    logic Dcache_flush;
+    assign Dcache_flush =1'b0;
+    logic Dcache_stall;
+    assign Dcache_stall = 1'b0;
+    //logic Dcache_miss;
+
+    assign Dcache_if.dst_addr = EX_alu_output;
+    assign Dcache_if.dst_width = EX_dst_width;
+    assign Dcache_if.dst_write_data = alu_rs2;
+    assign Dcache_if.dst_write_we = EX_dst_write_we;
+    assign Dcache_if.flush = Dcache_flush;
+    assign Dcache_if.stall = Dcache_stall;
+    //assign Dcache_miss = Dcache_if.Dcache_miss;
 
     multiplier u_multiplier(
         .clk       	(clk        ),
@@ -437,7 +429,7 @@ module soc(
     logic [63:0] MEN_multiplier_output;
 
     read_ctrl u_read_ctrl(
-        .dst_read_data       (dst_read_data),
+        .dst_read_data       (Dcache_if.dst_read_data       ),
         .addr                (MEN_alu_output[1:0]),
         .dst_width           (MEN_dst_width),
         .data_out            (MEN_dst_data)    
