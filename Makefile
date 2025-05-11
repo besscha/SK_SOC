@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := VTop
 
-OBJ = $(wildcard ./soc/*.*)
+OBJ = $(wildcard ./CPU/*.*)
 OBJ += $(wildcard ./memory/*.*)
 OBJ += Top.sv
 OBJ += interface.sv

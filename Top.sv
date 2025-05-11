@@ -19,7 +19,7 @@ module Top(
     Dcache_if Dcache_if();
     //logic nop;
     
-    soc u_soc(
+    CPU u_CPU(
         .clk            	(clk             ),
         .rst            	(rst             ),
         .Icache_if     	    (Icache_if.master      ),
