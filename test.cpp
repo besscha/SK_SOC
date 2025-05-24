@@ -138,8 +138,8 @@ int main(int argc, char **argv)
     VerilatedVcdC *tfp = new VerilatedVcdC;
     Verilated::traceEverOn(true);
     
-    //pmen_load_text("test.txt");
-    pmen_load_bin("test.bin");
+    pmen_load_text("test.txt");
+    //pmen_load_bin("test.bin");
     init_difftest();
     difftest_step();
 

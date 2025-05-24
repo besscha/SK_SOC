@@ -15,15 +15,15 @@ OBJ += interface.sv
 VTop: ./obj_dir/VTop
 	@./obj_dir/VTop
 
-test_files := $(wildcard test/*.bin)
+test_files := $(wildcard test/*.txt)
 
 .PHONY: test
 test: ./obj_dir/VTop
 	@echo "Running tests..."
 	@for test_file in $(test_files); do \
 		echo "Running test: $$test_file"; \
-		rm ./test.bin; \
-		cp $$test_file ./test.bin; \
+		rm ./test.txt; \
+		cp $$test_file ./test.txt; \
 		./obj_dir/VTop; \
 	done
 

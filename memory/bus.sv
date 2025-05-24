@@ -1,5 +1,6 @@
 `include "param.vh"
-/* verilator lint_off UNUSEDSIGNAL */
+/* verilator lint_off UNUSED */
+
 module bus(
     input logic clk,
 

@@ -1,5 +1,5 @@
 `include "param.vh"
-/* verilator lint_off UNUSEDSIGNAL */
+
 module if2_id(
     input logic clk,
     input logic rst,

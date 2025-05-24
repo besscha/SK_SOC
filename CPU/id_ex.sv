@@ -32,12 +32,8 @@ module id_ex(
     output logic [4:0] rd_addr_out,
     input logic [31:0] rs1,
     output logic [31:0] rs1_out,
-    input logic [4:0] rs1_addr,
-    output logic [4:0] rs1_addr_out,
     input logic [31:0] rs2,
     output logic [31:0] rs2_out,
-    input logic [4:0] rs2_addr,
-    output logic [4:0] rs2_addr_out,
     input logic [31:0] pc,
     output logic [31:0] pc_out,
     input logic [31:0] npc,
@@ -72,9 +68,7 @@ module id_ex(
             multi_sel_out <= 2'b10;
             divider_sel_out <= 1'b0;
             rs1_out <= 32'h0;
-            rs1_addr_out <= 5'h0;
             rs2_out <= 32'h0;
-            rs2_addr_out <= 5'h0;
             pc_out <= 32'h8000_0000;
             npc_out <= 32'h8000_0000;
             rd_addr_out <= 5'b0;
@@ -98,9 +92,7 @@ module id_ex(
             multi_sel_out <= multi_sel;
             divider_sel_out <= divider_sel;
             rs1_out <= rs1;
-            rs1_addr_out <= rs1_addr;
             rs2_out <= rs2;
-            rs2_addr_out <= rs2_addr;
             pc_out <= pc;
             npc_out <= npc;
             rd_addr_out <= rd_addr;

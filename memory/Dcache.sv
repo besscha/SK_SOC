@@ -7,6 +7,7 @@ module Dcache(
     output logic [31:0] data_out,
     output logic [3:0] write_we_out
 );
+    assign Dcache_if.Dcache_miss = 1'b0;
 
     logic [1:0] addr;
     assign addr = Dcache_if.dst_addr[1:0];

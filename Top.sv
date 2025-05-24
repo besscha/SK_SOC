@@ -1,7 +1,6 @@
 `include "param.vh"
-/* verilator lint_off UNUSEDSIGNAL */
-/* verilator lint_off IMPLICIT */
 /* verilator lint_off UNDRIVEN */
+/* verilator lint_off UNUSED */
 module Top(
     input logic clk,
     input logic rst,
@@ -13,7 +12,7 @@ module Top(
 
     logic [31:0] dst_write_data;
     logic [3:0]  dst_write_we;
-    logic flush;
+    //logic flush;
 
     Icache_if Icache_if();
     Dcache_if Dcache_if();
@@ -99,8 +98,10 @@ module Top(
 
 
 endmodule
+
 /* verilator lint_off DECLFILENAME */
-/* verilator lint_off WIDTHEXPAND */
+/* verilator lint_off WIDTH */
+
 module bram #(
     parameter int WIDTH = 32,
     parameter int DEPTH = 20

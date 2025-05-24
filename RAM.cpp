@@ -1,6 +1,7 @@
 uint32_t *pmen; // 1MB memory
 
-extern "C" int pmem_read(bool re, uint32_t raddr) {
+extern "C" int pmem_read(svBit re, int raddr)
+{
     if (!re) return 0x13;
     if (raddr >= 30000) {
         return 0;
@@ -10,7 +11,8 @@ extern "C" int pmem_read(bool re, uint32_t raddr) {
 }
 
 // write physical memory with write enable we, write addr waddr, write size (1 << mask), write data wword
-extern "C" void pmem_write(int we, uint32_t waddr, uint32_t wword) {
+extern "C" void pmem_write(int we, int waddr, int wword)
+{
     if (we == 0) return; // no write
     if (waddr >= 30000 && we != 0) {
         printf("Error: write address out of range: %08x\n", waddr);

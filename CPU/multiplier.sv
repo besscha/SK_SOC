@@ -1,5 +1,3 @@
-/* verilator lint_off DECLFILENAME */
-/* verilator lint_off GENUNNAMED */
 
 module multiplier(
     input clk,
@@ -26,6 +24,8 @@ module multiplier(
     );
 
 endmodule
+
+/* verilator lint_off DECLFILENAME */
 
 module multi(
     input clk,
@@ -214,7 +214,8 @@ module CSA#(
     assign cout = cout_temp << 1;
 
 endmodule
-/* verilator lint_off UNUSEDSIGNAL */
+/* verilator lint_off UNUSED */
+
 module booth#(
     parameter m         //base left shift bits
 )(

@@ -102,12 +102,13 @@ module CSR(
         end
     end
 
-
+    `ifdef DEBUG
     always begin
         update_csr({20'b0,`mstatus_addr}, mstatus); // Update machine status register
         update_csr({20'b0,`mtvec_addr}, mtvec); // Update machine trap vector base address
         update_csr({20'b0,`mepc_addr}, mepc); // Update machine exception program counter
         update_csr({20'b0,`mcause_addr}, mcause); // Update machine cause register
     end
+    `endif
 
 endmodule

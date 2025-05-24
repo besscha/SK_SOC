@@ -1,6 +1,5 @@
 /* verilator lint_off DECLFILENAME */
-/* verilator lint_off UNUSEDSIGNAL */
-
+/* verilator lint_off UNUSED */
 
 interface Icache_if;
     logic flush;
@@ -27,7 +26,6 @@ interface Icache_if;
 
 endinterface
 
-/* verilator lint_off UNUSEDSIGNAL */
 
 interface Dcache_if;
 
