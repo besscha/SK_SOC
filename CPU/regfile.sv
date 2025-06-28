@@ -38,7 +38,7 @@ module regfile(
 
     always_ff @(posedge clk) begin
         if (rst)begin
-            for (int i = 1; i < 31; i++) begin
+            for (int i = 1; i < 32; i++) begin
                 regfile[i] <= 32'b0;
             end
         end

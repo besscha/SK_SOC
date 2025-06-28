@@ -7,8 +7,7 @@ module ALU #(
     input logic [ALU_WIDTH-1:0] alu_input2,
     input logic [3:0] alu_op,
 
-    output logic [ALU_WIDTH-1:0] alu_output,
-    output logic zero_flag
+    output logic [ALU_WIDTH-1:0] alu_output
 );  
 
     logic [ALU_WIDTH-1:0] alu_add;
@@ -51,7 +50,5 @@ module ALU #(
             default: alu_output = alu_add;
         endcase
     end
-
-    assign zero_flag = (alu_output == 0) ? 1 : 0;
 
 endmodule

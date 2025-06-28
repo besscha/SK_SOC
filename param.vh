@@ -79,8 +79,15 @@
 
 // ----------------------------------------------
 
-`define main_memory_id 4'b1000
-`define mmo_memory_id  4'b0001
+`ifdef DEBUG
+    `define main_memory_id 4'b1000
+    `define mmo_memory_id  4'b0001
+`else
+    `define main_memory_id 4'hA
+    `define mmo_memory_id  4'h1
+`endif
+
+
 
 //
 

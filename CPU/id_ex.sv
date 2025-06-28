@@ -38,6 +38,8 @@ module id_ex(
     output logic [31:0] pc_out,
     input logic [31:0] npc,
     output logic [31:0] npc_out,
+    input logic [31:0] next_pc,
+    output logic [31:0] next_pc_out,
     input logic [11:0] csr_addr,
     output logic [11:0] csr_addr_out,
     input logic csr_we,
@@ -71,6 +73,7 @@ module id_ex(
             rs2_out <= 32'h0;
             pc_out <= 32'h8000_0000;
             npc_out <= 32'h8000_0000;
+            next_pc_out <= 32'h8000_0000;
             rd_addr_out <= 5'b0;
             csr_addr_out <= 12'b0;
             csr_we_out <= 1'b0;
@@ -95,6 +98,7 @@ module id_ex(
             rs2_out <= rs2;
             pc_out <= pc;
             npc_out <= npc;
+            next_pc_out <= next_pc;
             rd_addr_out <= rd_addr;
             csr_addr_out <= csr_addr;
             csr_we_out <= csr_we;

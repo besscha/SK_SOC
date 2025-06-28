@@ -49,6 +49,8 @@ module CPU(
         .rst       	(rst        ),
         .branch_pc 	(branch_pc  ),
         .branch_en 	(branch_en  ),
+        .prediction_pc (IF2_next_pc),
+        .prediction_en (branch_predicion_en),
         .stall      (pc_stall        ),
         .pc        	(IF1_pc         ),
         .npc       	(IF1_npc        )
@@ -89,6 +91,19 @@ module CPU(
     logic if2_id_stall;
     logic if2_id_flush;
 
+    logic [31:0] IF2_next_pc;
+    logic branch_predicion_en;
+    
+    branch_predicion u_branch_predicion(
+        .pc      	(IF2_pc       ),
+        .npc     	(IF2_npc      ),
+        .ist     	(IF2_ist_data      ),
+        .branch_predicion_en(branch_predicion_en),
+        .next_pc 	(IF2_next_pc  )
+    );
+    
+
+
     if2_id u_if2_id(
         .clk       	(clk        ),
         .rst       	(rst        ),
@@ -98,6 +113,8 @@ module CPU(
         .pc_out    	(ID_pc         ),
         .npc       	(IF2_npc        ),
         .npc_out   	(ID_npc        ),
+        .next_pc   	(IF2_next_pc    ),
+        .next_pc_out	(ID_next_pc    ),
         .ist_data  	(IF2_ist_data   ),
         .ist_data_out	(ID_ist_data   )
     );
@@ -107,6 +124,7 @@ module CPU(
 
     logic [31:0] ID_pc;
     logic [31:0] ID_npc;
+    logic [31:0] ID_next_pc;
     logic [31:0] ID_ist_data;
 
     logic [4:0] ID_rs1_addr;
@@ -180,7 +198,7 @@ module CPU(
             2'b00:
                 ID_rs1 = rs1;
             2'b01:
-                ID_rs1 = EX_alu_output;
+                ID_rs1 = EX_rd_sel == `rd_sel_alu_output ? EX_alu_output : EX_npc;
             2'b10:
                 ID_rs1 = MEN_rd;
             default:
@@ -193,7 +211,7 @@ module CPU(
             2'b00:
                 ID_rs2 = rs2;
             2'b01:
-                ID_rs2 = EX_alu_output;
+                ID_rs2 = EX_rd_sel == `rd_sel_alu_output ? EX_alu_output : EX_npc;
             2'b10:
                 ID_rs2 = MEN_rd;
             default:
@@ -263,6 +281,8 @@ module CPU(
         .pc_out     	(EX_pc        	),
         .npc        	(ID_npc       	),
         .npc_out    	(EX_npc       	),
+        .next_pc    	(ID_next_pc   	),
+        .next_pc_out 	(EX_next_pc   	),
         .csr_addr   	(ID_csr_addr    ),
         .csr_addr_out   	(EX_csr_addr    ),
         .csr_we     	(ID_csr_we      ),
@@ -297,11 +317,11 @@ module CPU(
     logic [31:0] EX_rs2;
     logic [31:0] EX_pc;
     logic [31:0] EX_npc;
+    logic [31:0] EX_next_pc;
 
     logic [31:0] alu_input1;
     logic [31:0] alu_input2;
     logic [31:0] EX_alu_output;
-    logic zero_flag;
 
     logic EX_ecall;
     logic EX_mret;
@@ -313,8 +333,7 @@ module CPU(
         .alu_input1 	(alu_input1  ),
         .alu_input2 	(alu_input2  ),
         .alu_op     	(EX_alu_op      ),
-        .alu_output 	(EX_alu_output  ),
-        .zero_flag  	(zero_flag   )
+        .alu_output 	(EX_alu_output  )
     );
 
     logic [11:0] EX_csr_addr;
@@ -323,7 +342,7 @@ module CPU(
     logic [31:0] EX_csr_rdata;
     logic [4:0] EX_csr_zimm;
     logic [31:0] EX_csr_wdata;
-    
+     
     priv u_priv(
         .csr_rdata 	(EX_csr_rdata  ),
         .rs        	(EX_rs1        	),
@@ -545,16 +564,16 @@ module CPU(
 
     branch u_branch(
         .branch_sel 	(EX_branch_sel  ),
-        .zero_flag  	(zero_flag   ),
         .alu_output 	(EX_alu_output  ),
-        .imm        	(EX_imm         ),
-        .current_pc 	(EX_pc          ),
+        .rs1        	(EX_rs1         ),
+        .rs2        	(EX_rs2         ),
         .current_npc 	(EX_npc         ),
+        .next_pc    	(EX_next_pc     ),
         .exp_en   	    (WB_exp_en    ),
         .mtvec      	(mtvec_global  ),
         .mepc       	(mepc_global   ),
         .mret      	    (EX_mret       ),    
-        .next_pc    	(branch_pc     ),
+        .branch_pc    	(branch_pc     ),
         .branch_en  	(branch_en   )
     );
 

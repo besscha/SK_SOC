@@ -11,6 +11,8 @@ module if2_id(
     output logic [31:0] pc_out,
     input logic [31:0] npc,
     output logic [31:0] npc_out,
+    input logic [31:0] next_pc,
+    output logic [31:0] next_pc_out,
     input logic [31:0] ist_data,
     output logic [31:0] ist_data_out
 
@@ -20,14 +22,17 @@ module if2_id(
         if (rst | flush ) begin
             pc_out <= 32'h8000_0000;
             npc_out <= 32'h8000_0000;
+            next_pc_out <= 32'h8000_0000;
             ist_data_out <= `nop;
         end else if (stall) begin
             pc_out <= pc_out;
             npc_out <= npc_out;
+            next_pc_out <= next_pc_out;
             ist_data_out <= ist_data_out;
         end else begin
             pc_out <= pc;
             npc_out <= npc;
+            next_pc_out <= next_pc;
             ist_data_out <= ist_data;
         end
     end

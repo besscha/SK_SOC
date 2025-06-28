@@ -2,54 +2,55 @@
 
 module branch(
     input logic [3:0] branch_sel,
-    input logic zero_flag,
     input logic [31:0] alu_output,
-
-    input logic [31:0] imm,  
-    input logic [31:0] current_pc,
     input logic [31:0] current_npc,
+    input logic [31:0] next_pc,
 
+    input logic [31:0] rs1,
+    input logic [31:0] rs2,
+    
     input logic exp_en,
     input logic [31:0] mtvec,
     input logic mret,
     input logic [31:0] mepc,
     
-    output logic [31:0] next_pc,
+    output logic [31:0] branch_pc,
     output logic branch_en
 );
 
-    logic comp_result;  //为alu最后一位，可能为slt或者sltu的结果
-    assign comp_result = alu_output[0];
-
     logic branch_en_temp;
-    assign branch_en = branch_en_temp | exp_en | mret; //输出跳转使能信号
+    assign branch_en = branch_pc != next_pc || exp_en || mret; //输出跳转使能信号
+
+    logic equal;
+    logic less;
+    logic less_unsigned;
+    assign equal = (rs1 == rs2); //判断两个寄存器的值是否相等
+    assign less = ($signed(rs1) < $signed(rs2)); //判断rs1是否小于rs2
+    assign less_unsigned = ($unsigned(rs1) < $unsigned(rs2)); //无符号比较
+
     always_comb begin   //根据branch_sel和comp_result来决定是否跳转
         case(branch_sel)
             `branch_sel_beq: begin
-                branch_en_temp = (zero_flag == 1'b1);
+                branch_en_temp = equal;
             end
             `branch_sel_bne: begin
-                branch_en_temp = (zero_flag == 1'b0);
+                branch_en_temp = ~equal;
             end
             `branch_sel_blt: begin
-                branch_en_temp = comp_result;
+                branch_en_temp = less;
             end
             `branch_sel_bge: begin
-                branch_en_temp = ~comp_result;
+                branch_en_temp = ~less;
             end
             `branch_sel_bltu: begin
-                branch_en_temp = comp_result;
+                branch_en_temp = less_unsigned;
             end
             `branch_sel_bgeu: begin
-                branch_en_temp = ~comp_result;
+                branch_en_temp = ~less_unsigned;
             end
-            `branch_sel_jal: begin
-                branch_en_temp = 1'b1;
-            end
+            `branch_sel_jal,
+            `branch_sel_scr,
             `branch_sel_jalr: begin
-                branch_en_temp = 1'b1;
-            end
-            `branch_sel_scr: begin
                 branch_en_temp = 1'b1;
             end
             default: begin
@@ -58,37 +59,17 @@ module branch(
         endcase
     end
 
-    logic [31:0] next_pc_temp;
-    always_comb begin       //根据branch_sel和imm来决定下一个pc
-        case (branch_sel)
-            `branch_sel_beq,
-            `branch_sel_bge,
-            `branch_sel_blt,
-            `branch_sel_bne,
-            `branch_sel_bltu,
-            `branch_sel_bgeu,
-            `branch_sel_jal: begin
-                next_pc_temp = current_pc + imm;
-            end
-            `branch_sel_jalr: begin
-                next_pc_temp = alu_output;
-            end
-            `branch_sel_scr: begin
-                next_pc_temp = current_npc;
-            end
-            default: begin
-                next_pc_temp = 0;
-            end
-        endcase
-    end
-
     always_comb begin
         if (exp_en) begin
-            next_pc = mtvec;
+            branch_pc = mtvec;
         end else if (mret) begin
-            next_pc = mepc; 
+            branch_pc = mepc; 
+        end else if (branch_sel == `branch_sel_scr) begin
+            branch_pc = current_npc; //如果是scr指令，则通过跳转到下一条指令来刷新流水线
+        end else if (branch_en_temp) begin
+            branch_pc = alu_output;
         end else begin
-            next_pc = next_pc_temp; //正常情况下跳转到下一个pc
+            branch_pc = current_npc;
         end
     end
 

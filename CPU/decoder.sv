@@ -130,13 +130,17 @@ module decoder(
         endcase
     end
 
-    assign alu_input1_sel = (opcode == `opcode_U_auipc) ? 1'b1 : 1'b0;
+    assign alu_input1_sel = (opcode == `opcode_U_auipc
+                            || opcode == `opcode_B
+                            || opcode == `opcode_J) ? 1'b1 : 1'b0;
     assign alu_input2_sel = (  opcode == `opcode_I_jair
                             || opcode == `opcode_I_Ari
                             || opcode == `opcode_I_ld
                             || opcode == `opcode_S
                             || opcode == `opcode_U_lui
-                            || opcode == `opcode_U_auipc) ? 1'b1 : 1'b0;
+                            || opcode == `opcode_U_auipc
+                            || opcode == `opcode_B
+                            || opcode == `opcode_J) ? 1'b1 : 1'b0;
 
     logic [3:0] alu_op_R;
 
@@ -227,23 +231,6 @@ module decoder(
             endcase
     end
 
-    logic [3:0] alu_op_B;
-    always_comb begin
-        case(funct3)
-            3'h0,
-            3'h1:begin
-                alu_op_B = `ALUop_sub;
-            end
-            3'h6,
-            3'h7:begin
-                alu_op_B = `ALUop_sltu;
-            end
-            default:begin
-                alu_op_B = `ALUop_slt;
-            end
-        endcase
-    end
-
     always_comb begin   //alu_op
         case(opcode)
             `opcode_R:begin
@@ -259,7 +246,7 @@ module decoder(
                 alu_op = `ALUop_add;
             end
             `opcode_B:begin
-                alu_op = alu_op_B;
+                alu_op = `ALUop_add;
             end
             `opcode_J:begin
                 alu_op = `ALUop_add;

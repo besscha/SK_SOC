@@ -121,12 +121,12 @@ void compare(){
 void difftest(){
     difftest_step();
     compare();
-    /* printf("sk");
+    printf("sk");
     print_regfile(SKcpu_state);
     printf("nemu");
     print_regfile(nemu_state);
     printf("----------------------------------------------------------------\n");
-    getchar(); */
+    getchar();
 }
 
 int main(int argc, char **argv)
