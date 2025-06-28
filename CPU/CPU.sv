@@ -162,15 +162,7 @@ module CPU(
         .branch_sel 	(ID_branch_sel  ),
         .dst_write_we 	(ID_dst_write_we  ),
         .dst_width 	(ID_dst_width  ),
-        .rd_sel 	(ID_rd_sel  ),
-        .multi_sel 	(ID_multi_sel  ),
-        .divider_sel 	(ID_divider_sel  ),
-        .csr_addr 	(ID_csr_addr  ),
-        .csr_we    	(ID_csr_we     ),
-        .csr_sel   	(ID_csr_sel    ),
-        .csr_zimm  	(ID_csr_zimm   ),
-        .ecall     	(ID_ecall      ),
-        .mret      	(ID_mret       )
+        .rd_sel 	(ID_rd_sel  )
     );
     
     logic [31:0] ID_rs1;
@@ -218,27 +210,6 @@ module CPU(
                 ID_rs2 = rs2;
         endcase
     end
-
-    logic [31:0] mtvec_global;
-    logic [31:0] mepc_global;
-
-
-    CSR u_CSR(
-        .clk      	(clk       ),
-        .rst      	(rst       ),
-        .csr_rdata	(ID_csr_rdata   ),
-        .csr_addr 	(ID_csr_addr  ),
-        .csr_waddr  (WB_csr_addr   ),
-        .csr_wdata	(WB_csr_wdata       ),
-        .csr_we   	(WB_csr_we  ),
-        .mtvec_global 	(mtvec_global  ),
-        .mepc_global 	(mepc_global  ),
-        .mepc_in 	( WB_pc ),
-        .mcause_in 	({WB_exp_code[4],27'b0,WB_exp_code[3:0]} ),
-        .exp_in   	(WB_exp_en  ),
-        .mret_in  	(EX_mret  )
-    );
-
     //--------------------------------------
 
     logic id_ex_stall;
@@ -269,10 +240,6 @@ module CPU(
         .rd_addr_out 	(EX_rd_addr    	),
         .rd_sel     	(ID_rd_sel     	),
         .rd_sel_out  	(EX_rd_sel     	),
-        .multi_sel  	(ID_multi_sel  	),
-        .multi_sel_out	(EX_multi_sel  	),
-        .divider_sel 	(ID_divider_sel 	),
-        .divider_sel_out	(EX_divider_sel 	),
         .rs1        	(ID_rs1        	),
         .rs1_out    	(EX_rs1        	),
         .rs2        	(ID_rs2         ),
@@ -282,21 +249,7 @@ module CPU(
         .npc        	(ID_npc       	),
         .npc_out    	(EX_npc       	),
         .next_pc    	(ID_next_pc   	),
-        .next_pc_out 	(EX_next_pc   	),
-        .csr_addr   	(ID_csr_addr    ),
-        .csr_addr_out   	(EX_csr_addr    ),
-        .csr_we     	(ID_csr_we      ),
-        .csr_we_out 	(EX_csr_we      ),
-        .csr_sel    	(ID_csr_sel     ),
-        .csr_sel_out 	(EX_csr_sel     ),
-        .csr_rdata  	(ID_csr_rdata   ),
-        .csr_rdata_out  	(EX_csr_rdata   ),
-        .csr_zimm   	(ID_csr_zimm    ),
-        .csr_zimm_out   	(EX_csr_zimm    ),
-        .ecall      	(ID_ecall       ),
-        .ecall_out  	(EX_ecall       ),
-        .mret       	(ID_mret        ),
-        .mret_out   	(EX_mret        )
+        .next_pc_out 	(EX_next_pc   	)
     );  
     //--------------------------------------
     // EX
@@ -323,9 +276,6 @@ module CPU(
     logic [31:0] alu_input2;
     logic [31:0] EX_alu_output;
 
-    logic EX_ecall;
-    logic EX_mret;
-
     assign alu_input1 = (EX_alu_input1_sel == 1'b0) ? EX_rs1 : EX_pc;
     assign alu_input2 = (EX_alu_input2_sel == 1'b0) ? EX_rs2 : EX_imm;
 
@@ -334,21 +284,6 @@ module CPU(
         .alu_input2 	(alu_input2  ),
         .alu_op     	(EX_alu_op      ),
         .alu_output 	(EX_alu_output  )
-    );
-
-    logic [11:0] EX_csr_addr;
-    logic EX_csr_we;
-    logic [2:0] EX_csr_sel;
-    logic [31:0] EX_csr_rdata;
-    logic [4:0] EX_csr_zimm;
-    logic [31:0] EX_csr_wdata;
-     
-    priv u_priv(
-        .csr_rdata 	(EX_csr_rdata  ),
-        .rs        	(EX_rs1        	),
-        .zimm      	(EX_csr_zimm      	),
-        .csr_sel   	(EX_csr_sel    ),
-        .csr_wdata 	(EX_csr_wdata  )
     );
     
     logic Dcache_flush;
@@ -364,35 +299,7 @@ module CPU(
     assign Dcache_if.flush = Dcache_flush;
     assign Dcache_if.stall = Dcache_stall;
     //assign Dcache_miss = Dcache_if.Dcache_miss;
-
-    multiplier u_multiplier(
-        .clk       	(clk        ),
-        .rst       	(rst        ),
-        .symbolic  	(EX_multi_sel 	),
-        .x         	(EX_rs1    ),
-        .y         	(EX_rs2    ),
-        .p         	(MEN_multiplier_output)
-    );
     
-    logic [31:0] MEN_quotient_output;
-    logic [31:0] MEN_remainder_output;
-    logic divider_start;
-    assign divider_start = (EX_rd_sel == `rd_sel_div || EX_rd_sel == `rd_sel_rem) ? 1'b1 : 1'b0;
-    logic divider_stall;
-
-    divider u_divider(
-        .clk              	(clk               ),
-        .rst              	(rst               ),
-        .dividend_input   	(EX_rs1    ),
-        .divisor_input    	(EX_rs2     ),
-        .sign             	(EX_divider_sel              ),
-        .start            	(divider_start             ),
-        .quotient_output  	(MEN_quotient_output   ),
-        .remainder_output 	(MEN_remainder_output  ),
-        .stall             	(divider_stall              )
-    );
-    
-
     //--------------------------------------
     logic ex_men_stall;
 
@@ -413,17 +320,7 @@ module CPU(
         .rd_sel           	(EX_rd_sel            ),
         .rd_sel_out       	(MEN_rd_sel        ),
         .alu_output       	(EX_alu_output        ),
-        .alu_output_out   	(MEN_alu_output    ),
-        .csr_addr         	(EX_csr_addr          ),
-        .csr_addr_out       (MEN_csr_addr       ),
-        .csr_we           	(EX_csr_we            ),
-        .csr_we_out         (MEN_csr_we         ),
-        .csr_wdata        	(EX_csr_wdata         ),
-        .csr_wdata_out      (MEN_csr_wdata      ),
-        .csr_rdata        	(EX_csr_rdata         ),
-        .csr_rdata_out      (MEN_csr_rdata),
-        .ecall           	(EX_ecall            ),
-        .ecall_out          (MEN_ecall          )
+        .alu_output_out   	(MEN_alu_output    )
     );
     
     //--------------------------------------
@@ -470,16 +367,6 @@ module CPU(
                 MEN_rd = MEN_dst_data;
             `rd_sel_npc:
                 MEN_rd = MEN_npc;
-            `rd_sel_csr:
-                MEN_rd = MEN_csr_rdata;
-            `rd_sel_mul_low:
-                MEN_rd = multiplier_output_low;
-            `rd_sel_mul_high:
-                MEN_rd = multiplier_output_high;
-            `rd_sel_div:
-                MEN_rd = MEN_quotient_output;
-            `rd_sel_rem:
-                MEN_rd = MEN_remainder_output;
             default:
                 MEN_rd = MEN_alu_output;
         endcase
@@ -501,15 +388,7 @@ module CPU(
         .pc             (MEN_pc             ),
         .pc_out         (WB_pc         ),
         .npc         	(MEN_npc          ),
-        .npc_out     	(WB_npc      ),
-        .csr_addr       (MEN_csr_addr       ),
-        .csr_addr_out   (WB_csr_addr   ),
-        .csr_we         (MEN_csr_we         ),
-        .csr_we_out     (WB_csr_we     ),
-        .csr_wdata      (MEN_csr_wdata),
-        .csr_wdata_out  (WB_csr_wdata  ),
-        .ecall          (MEN_ecall          ),
-        .ecall_out      (WB_ecall      )
+        .npc_out     	(WB_npc      )
     );
     
     //--------------------------------------
@@ -519,21 +398,6 @@ module CPU(
     logic [31:0] WB_npc;
     logic [4:0] WB_rd_addr;
     logic WB_rd_we;
-
-    logic WB_csr_we;
-    logic [11:0] WB_csr_addr;
-    logic [31:0] WB_csr_wdata;
-
-    logic WB_ecall;
-    logic WB_exp_en;
-    logic [4:0] WB_exp_code;
-
-    exp_commit u_exp_commit(
-        .ecall 	(WB_ecall  ),
-        .exp_en 	(WB_exp_en  ),
-        .exp_code 	(WB_exp_code  )
-    );
-
     //--------------------------------------
     // test module
 
@@ -569,10 +433,6 @@ module CPU(
         .rs2        	(EX_rs2         ),
         .current_npc 	(EX_npc         ),
         .next_pc    	(EX_next_pc     ),
-        .exp_en   	    (WB_exp_en    ),
-        .mtvec      	(mtvec_global  ),
-        .mepc       	(mepc_global   ),
-        .mret      	    (EX_mret       ),    
         .branch_pc    	(branch_pc     ),
         .branch_en  	(branch_en   )
     );

@@ -24,10 +24,6 @@ module id_ex(
     output logic [2:0] dst_width_out,
     input logic [2:0] rd_sel,
     output logic [2:0] rd_sel_out,
-    input logic [1:0] multi_sel,
-    output logic [1:0] multi_sel_out,
-    input logic divider_sel,
-    output logic divider_sel_out,
     input logic [4:0] rd_addr,
     output logic [4:0] rd_addr_out,
     input logic [31:0] rs1,
@@ -39,21 +35,7 @@ module id_ex(
     input logic [31:0] npc,
     output logic [31:0] npc_out,
     input logic [31:0] next_pc,
-    output logic [31:0] next_pc_out,
-    input logic [11:0] csr_addr,
-    output logic [11:0] csr_addr_out,
-    input logic csr_we,
-    output logic csr_we_out,
-    input logic [2:0] csr_sel,
-    output logic [2:0] csr_sel_out,
-    input logic [31:0] csr_rdata,
-    output logic [31:0] csr_rdata_out,
-    input logic [4:0] csr_zimm,
-    output logic [4:0] csr_zimm_out,
-    input logic ecall,
-    output logic ecall_out,
-    input logic mret,
-    output logic mret_out
+    output logic [31:0] next_pc_out
 );
 
     always_ff @(posedge clk) begin
@@ -67,21 +49,12 @@ module id_ex(
             dst_write_we_out <= 1'b0;
             dst_width_out <= 3'b0;
             rd_sel_out <= 3'b0;
-            multi_sel_out <= 2'b10;
-            divider_sel_out <= 1'b0;
             rs1_out <= 32'h0;
             rs2_out <= 32'h0;
             pc_out <= 32'h8000_0000;
             npc_out <= 32'h8000_0000;
             next_pc_out <= 32'h8000_0000;
             rd_addr_out <= 5'b0;
-            csr_addr_out <= 12'b0;
-            csr_we_out <= 1'b0;
-            csr_sel_out <= 3'b0;
-            csr_rdata_out <= 32'b0;
-            csr_zimm_out <= 5'b0;
-            ecall_out <= 1'b0;
-            mret_out <= 1'b0;
         end else if (!stall) begin
             rd_we_out <= rd_we;
             imm_out <= imm;
@@ -92,21 +65,12 @@ module id_ex(
             dst_write_we_out <= dst_write_we;
             dst_width_out <= dst_width;
             rd_sel_out <= rd_sel;
-            multi_sel_out <= multi_sel;
-            divider_sel_out <= divider_sel;
             rs1_out <= rs1;
             rs2_out <= rs2;
             pc_out <= pc;
             npc_out <= npc;
             next_pc_out <= next_pc;
             rd_addr_out <= rd_addr;
-            csr_addr_out <= csr_addr;
-            csr_we_out <= csr_we;
-            csr_sel_out <= csr_sel;
-            csr_rdata_out <= csr_rdata;
-            csr_zimm_out <= csr_zimm;
-            ecall_out <= ecall;
-            mret_out <= mret;
         end
     end
 

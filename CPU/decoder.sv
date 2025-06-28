@@ -21,18 +21,7 @@ module decoder(
     output logic dst_write_we,
     output logic [2:0] dst_width,
 
-    output logic [2:0] rd_sel,
-
-    output logic [1:0] multi_sel,
-    output logic       divider_sel,
-
-    output logic [11:0] csr_addr,
-    output logic csr_we,
-    output logic [2:0] csr_sel,
-    output logic [4:0] csr_zimm,
-
-    output logic ecall,
-    output logic mret
+    output logic [2:0] rd_sel
 );
     
     logic [6:0] opcode;
@@ -65,8 +54,7 @@ module decoder(
         || opcode == `opcode_I_jair
         || opcode == `opcode_J
         || opcode == `opcode_U_lui
-        || opcode == `opcode_U_auipc
-        || opcode == `opcode_I_csr) begin
+        || opcode == `opcode_U_auipc) begin
             rd_we = 1'b1;
         end
         else begin
@@ -82,20 +70,8 @@ module decoder(
             `opcode_I_jair:begin
                 rd_sel = `rd_sel_npc;
             end
-            `opcode_I_csr:begin
-                rd_sel = `rd_sel_csr;
-            end
             `opcode_R:begin
-                rd_sel = funct7 != 7'b0000001 ? `rd_sel_alu_output :
-                         funct3 == 3'h0 ? `rd_sel_mul_low :      //MUL
-                         funct3 == 3'h1 ? `rd_sel_mul_high :      //MULH
-                         funct3 == 3'h2 ? `rd_sel_mul_high :      //MULHSU
-                         funct3 == 3'h3 ? `rd_sel_mul_high :      //MULHU 
-                         funct3 == 3'h4 ? `rd_sel_div :           //DIV
-                         funct3 == 3'h5 ? `rd_sel_div :           //DIVU
-                         funct3 == 3'h6 ? `rd_sel_rem :           //REM
-                         funct3 == 3'h7 ? `rd_sel_rem  :           //REMU
-                         `rd_sel_alu_output; 
+                rd_sel = `rd_sel_alu_output;
             end
             default:begin
                 rd_sel = `rd_sel_alu_output;
@@ -274,9 +250,6 @@ module decoder(
             `opcode_I_jair:begin
                 branch_sel = `branch_sel_jalr;
             end
-            `opcode_I_csr:begin
-                branch_sel = `branch_sel_scr;
-            end
             default:begin
                 branch_sel = 4'b0000;
             end
@@ -285,25 +258,4 @@ module decoder(
 
     assign dst_write_we = (opcode == `opcode_S) ? 1'b1 : 1'b0;
     assign dst_width = funct3;
-
-    assign csr_addr = ist[31:20];
-    assign csr_we = (opcode == `opcode_I_csr) ? 1'b1 : 1'b0;
-    assign csr_sel = funct3;
-    assign csr_zimm = ist[19:15];
-
-    assign ecall = (ist == `ecall_ist) ? 1'b1 : 1'b0;
-    assign mret = (ist == `mret_ist ) ? 1'b1 : 1'b0;
-    assign multi_sel = (opcode == `opcode_R) && (funct7 == 7'h1) ? 
-                        (funct3 == 3'h0) ? 2'b11 : //MUL
-                        (funct3 == 3'h1) ? 2'b11 : //MULH
-                        (funct3 == 3'h2) ? 2'b01 : //MULHSU
-                        (funct3 == 3'h3) ? 2'b00 : //MULHU
-                        2'b10 : 2'b10;
-    assign divider_sel = (opcode == `opcode_R) && (funct7 == 7'h1) ? 
-                        (funct3 == 3'h4) ? 1'b1 : //DIV
-                        (funct3 == 3'h5) ? 1'b0 : //DIVU
-                        (funct3 == 3'h6) ? 1'b1 : //REM
-                        (funct3 == 3'h7) ? 1'b0 : //REMU
-                        1'b0 : 1'b0;
-  
 endmodule

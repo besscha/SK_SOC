@@ -9,17 +9,12 @@ module branch(
     input logic [31:0] rs1,
     input logic [31:0] rs2,
     
-    input logic exp_en,
-    input logic [31:0] mtvec,
-    input logic mret,
-    input logic [31:0] mepc,
-    
     output logic [31:0] branch_pc,
     output logic branch_en
 );
 
     logic branch_en_temp;
-    assign branch_en = branch_pc != next_pc || exp_en || mret; //输出跳转使能信号
+    assign branch_en = branch_pc != next_pc; //输出跳转使能信号
 
     logic equal;
     logic less;
@@ -60,13 +55,7 @@ module branch(
     end
 
     always_comb begin
-        if (exp_en) begin
-            branch_pc = mtvec;
-        end else if (mret) begin
-            branch_pc = mepc; 
-        end else if (branch_sel == `branch_sel_scr) begin
-            branch_pc = current_npc; //如果是scr指令，则通过跳转到下一条指令来刷新流水线
-        end else if (branch_en_temp) begin
+        if (branch_en_temp) begin
             branch_pc = alu_output;
         end else begin
             branch_pc = current_npc;
