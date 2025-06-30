@@ -1,6 +1,9 @@
 `include "param.vh"
 
 module branch(
+    input logic clk,
+    input logic rst,
+
     input logic [3:0] branch_sel,
     input logic [31:0] alu_output,
     input logic [31:0] current_npc,
@@ -54,8 +57,17 @@ module branch(
         endcase
     end
 
+    logic branch_en_reg;
+    always_ff @(posedge clk) begin
+        if (rst || branch_en) begin
+            branch_en_reg <= 1'b0;
+        end else begin
+            branch_en_reg <= branch_en_temp;
+        end
+    end
+
     always_comb begin
-        if (branch_en_temp) begin
+        if (branch_en_reg) begin
             branch_pc = alu_output;
         end else begin
             branch_pc = current_npc;

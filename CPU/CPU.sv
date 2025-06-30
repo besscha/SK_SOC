@@ -8,30 +8,47 @@ module CPU(
     Dcache_if Dcache_if
 );
     logic nop_load_use;
-    logic nop_multi_use;
-    assign nop_load_use = (EX_rd_sel == `rd_sel_dst_data) && (EX_rd_addr == ID_rs1_addr || EX_rd_addr == ID_rs2_addr) && (EX_rd_we == 1'b1);
-    assign nop_multi_use = (EX_multi_sel != 2'b10) && (EX_rd_addr == ID_rs1_addr || EX_rd_addr == ID_rs2_addr);
+    logic load_use_EX1;
+    logic load_use_EX2;
+   // logic load_use_MEN;
+    assign load_use_EX1 = (EX1_rd_sel == `rd_sel_dst_data) && (EX1_rd_addr == ID_rs1_addr || EX1_rd_addr == ID_rs2_addr) && (EX1_rd_we == 1'b1);
+    assign load_use_EX2 = (EX2_rd_sel == `rd_sel_dst_data) && (EX2_rd_addr == ID_rs1_addr || EX2_rd_addr == ID_rs2_addr) && (EX2_rd_we == 1'b1); 
+    //assign load_use_MEN = (MEN_rd_sel == `rd_sel_dst_data) && (MEN_rd_addr == ID_rs1_addr || MEN_rd_addr == ID_rs2_addr) && (MEN_rd_we == 1'b1);
+
+    logic nop_load_use_reg1;
+    //logic nop_load_use_reg2;
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            nop_load_use_reg1 <= 1'b0;
+            //nop_load_use_reg2 <= 1'b0;
+        end else begin
+            nop_load_use_reg1 <= load_use_EX1;
+            //nop_load_use_reg2 <= load_use_EX2 || nop_load_use_reg1;
+        end
+    end
+
+    assign nop_load_use = load_use_EX1 || load_use_EX2 || nop_load_use_reg1;
+
 
     pipeline_ctrl u_pipeline_ctrl(
         .nop_load_use       	(nop_load_use       ),
-        .nop_multi_use      	(nop_multi_use      ),
         .branch_en               	(branch_en               	),
-        .EX_ecall               	(EX_ecall               	),
-        .divider_stall         	(divider_stall         	),
         .Icache_miss         	(Icache_if.Icache_miss         	),
         .Dcache_miss         	(Dcache_if.Dcache_miss         	),
 
         .pc_stall               	(pc_stall              	),
         .if1_if2_stall              ( if1_if2_stall),
         .if2_id_stall               (if2_id_stall),
-        .id_ex_stall                (id_ex_stall ),
-        .ex_men_stall               (ex_men_stall),
+        .id_ex1_stall                (id_ex1_stall ),
+        .ex1_ex2_stall               (ex1_ex2_stall),
+        .ex2_men_stall               (ex2_men_stall),
         .men_wb_stall               (men_wb_stall),
         .Icache_stall               (Icache_stall),
         
         .if1_if2_flush              (if1_if2_flush),
         .if2_id_flush               (if2_id_flush),
-        .id_ex_flush                (id_ex_flush ),
+        .id_ex1_flush                (id_ex1_flush ),
+        .ex1_ex2_flush               (ex1_ex2_flush),
         .Icache_flush               (Icache_flush)
     );
 
@@ -101,8 +118,6 @@ module CPU(
         .branch_predicion_en(branch_predicion_en),
         .next_pc 	(IF2_next_pc  )
     );
-    
-
 
     if2_id u_if2_id(
         .clk       	(clk        ),
@@ -140,14 +155,6 @@ module CPU(
     logic ID_dst_write_we;
     logic [2:0] ID_dst_width;
     logic [2:0] ID_rd_sel;
-    logic [1:0] ID_multi_sel;
-    logic ID_divider_sel;
-    logic [11:0] ID_csr_addr;
-    logic ID_csr_we;
-    logic [2:0] ID_csr_sel;
-    logic [4:0] ID_csr_zimm;
-    logic ID_ecall;
-    logic ID_mret;
 
     decoder u_decoder(
         .ist    	(ID_ist_data     ),
@@ -170,7 +177,6 @@ module CPU(
     logic [31:0] ID_rs2;
     logic [31:0] rs2;
     logic [31:0] rd;
-    logic [31:0] ID_csr_rdata;
     
     regfile u_regfile(
         .clk      	(clk       ),
@@ -190,11 +196,11 @@ module CPU(
             2'b00:
                 ID_rs1 = rs1;
             2'b01:
-                ID_rs1 = EX_rd_sel == `rd_sel_alu_output ? EX_alu_output : EX_npc;
+                ID_rs1 = EX1_rd_sel == `rd_sel_alu_output ? EX1_alu_output : EX1_npc;
             2'b10:
-                ID_rs1 = MEN_rd;
-            default:
-                ID_rs1 = rs1;
+                ID_rs1 = EX2_rd_sel == `rd_sel_alu_output ? EX2_alu_output : EX2_npc;
+            2'b11:
+                ID_rs1 = MEN_rd_sel == `rd_sel_alu_output ? MEN_alu_output : MEN_npc;
         endcase
     end
 
@@ -203,123 +209,180 @@ module CPU(
             2'b00:
                 ID_rs2 = rs2;
             2'b01:
-                ID_rs2 = EX_rd_sel == `rd_sel_alu_output ? EX_alu_output : EX_npc;
+                ID_rs2 = EX1_rd_sel == `rd_sel_alu_output ? EX1_alu_output : EX1_npc;
             2'b10:
-                ID_rs2 = MEN_rd;
-            default:
-                ID_rs2 = rs2;
+                ID_rs2 = EX2_rd_sel == `rd_sel_alu_output ? EX2_alu_output : EX2_npc;
+            2'b11:
+                ID_rs2 = MEN_rd_sel == `rd_sel_alu_output ? MEN_alu_output : MEN_npc;
         endcase
     end
+
+    logic forward_rs1_men;
+    logic forward_rs2_men;
+
+    assign forward_rs1_men = forward_rs1 == 2'b11 && MEN_rd_sel == `rd_sel_dst_data;
+    assign forward_rs2_men = forward_rs2 == 2'b11 && MEN_rd_sel == `rd_sel_dst_data;
     //--------------------------------------
 
-    logic id_ex_stall;
-    logic id_ex_flush;
+    logic id_ex1_stall;
+    logic id_ex1_flush;
 
-    id_ex u_id_ex(
+    id_ex1 u_id_ex1(
         .clk       	(clk        ),
         .rst       	(rst        ),
-        .stall      (id_ex_stall        ),
-        .flush     	(id_ex_flush     	),
+        .stall      (id_ex1_stall        ),
+        .flush     	(id_ex1_flush     	),
         .rd_we     	(ID_rd_we      ),
-        .rd_we_out 	(EX_rd_we  ),
+        .rd_we_out 	(EX1_rd_we  ),
         .imm       	(ID_imm     ),
-        .imm_out   	(EX_imm    ),
+        .imm_out   	(EX1_imm    ),
         .alu_op    	(ID_alu_op  ),
-        .alu_op_out 	(EX_alu_op  ),
+        .alu_op_out 	(EX1_alu_op  ),
         .alu_input1_sel 	(ID_alu_input1_sel  ),
-        .alu_input1_sel_out 	(EX_alu_input1_sel  ),
+        .alu_input1_sel_out 	(EX1_alu_input1_sel  ),
         .alu_input2_sel 	(ID_alu_input2_sel  ),
-        .alu_input2_sel_out 	(EX_alu_input2_sel  ),
+        .alu_input2_sel_out 	(EX1_alu_input2_sel  ),
         .branch_sel 	(ID_branch_sel  ),
-        .branch_sel_out 	(EX_branch_sel  ),
+        .branch_sel_out 	(EX1_branch_sel  ),
         .dst_write_we 	(ID_dst_write_we  ),
-        .dst_write_we_out 	(EX_dst_write_we  ),
+        .dst_write_we_out 	(EX1_dst_write_we  ),
         .dst_width  	(ID_dst_width  	),
-        .dst_width_out  	(EX_dst_width  	),
+        .dst_width_out  	(EX1_dst_width  	),
         .rd_addr    	(ID_rd_addr    	),
-        .rd_addr_out 	(EX_rd_addr    	),
+        .rd_addr_out 	(EX1_rd_addr    	),
         .rd_sel     	(ID_rd_sel     	),
-        .rd_sel_out  	(EX_rd_sel     	),
+        .rd_sel_out  	(EX1_rd_sel     	),
         .rs1        	(ID_rs1        	),
-        .rs1_out    	(EX_rs1        	),
+        .rs1_out    	(EX1_rs1_temp        	),
         .rs2        	(ID_rs2         ),
-        .rs2_out    	(EX_rs2        	),
+        .rs2_out    	(EX1_rs2_temp        	),
+        .forward_rs1_men    (forward_rs1_men    ),
+        .forward_rs1_men_out  (EX1_forward_rs1_men  ),
+        .forward_rs2_men    (forward_rs2_men    ),
+        .forward_rs2_men_out  (EX1_forward_rs2_men  ),
         .pc         	(ID_pc        	),
-        .pc_out     	(EX_pc        	),
+        .pc_out     	(EX1_pc        	),
         .npc        	(ID_npc       	),
-        .npc_out    	(EX_npc       	),
+        .npc_out    	(EX1_npc       	),
         .next_pc    	(ID_next_pc   	),
-        .next_pc_out 	(EX_next_pc   	)
+        .next_pc_out 	(EX1_next_pc   	)
     );  
     //--------------------------------------
-    // EX
+    // EX1
 
-    logic EX_rd_we;
-    logic [31:0] EX_imm;
-    logic [3:0] EX_alu_op;
-    logic EX_alu_input1_sel;
-    logic EX_alu_input2_sel;
-    logic [3:0] EX_branch_sel;
-    logic EX_dst_write_we;
-    logic [2:0] EX_dst_width;
-    logic [2:0] EX_rd_sel;
-    logic [1:0] EX_multi_sel;
-    logic EX_divider_sel;
-    logic [4:0] EX_rd_addr;
-    logic [31:0] EX_rs1;
-    logic [31:0] EX_rs2;
-    logic [31:0] EX_pc;
-    logic [31:0] EX_npc;
-    logic [31:0] EX_next_pc;
+    logic EX1_rd_we; 
+    logic [31:0] EX1_imm;
+    logic [3:0] EX1_alu_op;
+    logic EX1_alu_input1_sel;
+    logic EX1_alu_input2_sel;
+    logic [3:0] EX1_branch_sel;
+    logic EX1_dst_write_we;
+    logic [2:0] EX1_dst_width;
+    logic [2:0] EX1_rd_sel;
+    logic [4:0] EX1_rd_addr;
+    logic [31:0] EX1_rs1_temp;
+    logic [31:0] EX1_rs1;
+    logic [31:0] EX1_rs2_temp;
+    logic [31:0] EX1_rs2;
+    logic [31:0] EX1_pc;
+    logic [31:0] EX1_npc;
+    logic [31:0] EX1_next_pc;
 
     logic [31:0] alu_input1;
     logic [31:0] alu_input2;
-    logic [31:0] EX_alu_output;
+    logic [31:0] EX1_alu_output;
 
-    assign alu_input1 = (EX_alu_input1_sel == 1'b0) ? EX_rs1 : EX_pc;
-    assign alu_input2 = (EX_alu_input2_sel == 1'b0) ? EX_rs2 : EX_imm;
+    logic EX1_forward_rs1_men;
+    logic EX1_forward_rs2_men;
+
+    assign EX1_rs1 = (EX1_forward_rs1_men == 1'b1) ? WB_dst_data : EX1_rs1_temp;
+    assign EX1_rs2 = (EX1_forward_rs1_men == 1'b1) ? WB_dst_data : EX1_rs2_temp;
+
+    assign alu_input1 = (EX1_alu_input1_sel == 1'b1) ? EX1_pc : EX1_rs1;
+    assign alu_input2 = (EX1_alu_input2_sel == 1'b1) ? EX1_imm : EX1_rs2;
 
     ALU u_ALU(
         .alu_input1 	(alu_input1  ),
         .alu_input2 	(alu_input2  ),
-        .alu_op     	(EX_alu_op      ),
-        .alu_output 	(EX_alu_output  )
+        .alu_op     	(EX1_alu_op      ),
+        .alu_output 	(EX1_alu_output  )
     );
     
+    //--------------------------------------
+
+    logic ex1_ex2_flush;
+    logic ex1_ex2_stall;
+
+    ex1_ex2 u_ex1_ex2(
+        .clk              	(clk               ),
+        .rst              	(rst               ),
+        .stall            	(ex1_ex2_stall       ),
+        .flush              (ex1_ex2_flush        ),
+        .npc              	(EX1_npc               ),
+        .npc_out          	(EX2_npc          	 ),
+        .next_pc         	(EX1_next_pc          ),
+        .next_pc_out      	(EX2_next_pc       ),
+        .rd_we            	(EX1_rd_we             ),
+        .rd_we_out        	(EX2_rd_we         ),
+        .dst_write_we     	(EX1_dst_write_we      ),
+        .dst_write_we_out   (EX2_dst_write_we     ),
+        .dst_width        	(EX1_dst_width         ),
+        .dst_width_out    	(EX2_dst_width     ),
+        .dst_write_data  	(EX1_rs2  	),
+        .dst_write_data_out (EX2_dst_write_data),
+        .rd_addr          	(EX1_rd_addr           ),
+        .rd_addr_out        (EX2_rd_addr        ),
+        .rd_sel           	(EX1_rd_sel            ),
+        .rd_sel_out       	(EX2_rd_sel        ),
+        .alu_output       	(EX1_alu_output        ),
+        .alu_output_out   	(EX2_alu_output    )
+    );
+
+    //--------------------------------------
+    // EX2
+
+    logic EX2_rd_we;
+    logic EX2_dst_write_we;
+    logic [2:0] EX2_dst_width;
+    logic [31:0] EX2_dst_write_data;
+    logic [2:0] EX2_rd_sel;
+    logic [4:0] EX2_rd_addr;
+    logic [31:0] EX2_npc;
+    logic [31:0] EX2_next_pc;
+    logic [31:0] EX2_alu_output;
+
     logic Dcache_flush;
     assign Dcache_flush =1'b0;
     logic Dcache_stall;
     assign Dcache_stall = 1'b0;
     //logic Dcache_miss;
 
-    assign Dcache_if.dst_addr = EX_alu_output;
-    assign Dcache_if.dst_width = EX_dst_width;
-    assign Dcache_if.dst_write_data = EX_rs2;
-    assign Dcache_if.dst_write_we = EX_dst_write_we;
+    assign Dcache_if.dst_addr = EX2_alu_output;
+    assign Dcache_if.dst_width = EX2_dst_width;
+    assign Dcache_if.dst_write_data = EX2_dst_write_data;
+    assign Dcache_if.dst_write_we = EX2_dst_write_we;
     assign Dcache_if.flush = Dcache_flush;
     assign Dcache_if.stall = Dcache_stall;
     //assign Dcache_miss = Dcache_if.Dcache_miss;
-    
-    //--------------------------------------
-    logic ex_men_stall;
 
-    ex_men u_ex_men(
+    //--------------------------------------
+    logic ex2_men_stall;
+
+    ex2_men u_ex2_men(
         .clk              	(clk               ),
         .rst              	(rst               ),
-        .stall            	(ex_men_stall       ),
-        .pc               	(EX_pc                ),
-        .pc_out             (MEN_pc             ),
-        .npc              	(EX_npc               ),
+        .stall            	(ex2_men_stall       ),
+        .npc              	(EX2_npc               ),
         .npc_out          	(MEN_npc          	 ),
-        .rd_we            	(EX_rd_we             ),
+        .rd_we            	(EX2_rd_we             ),
         .rd_we_out        	(MEN_rd_we         ),
-        .dst_width        	(EX_dst_width         ),
+        .dst_width        	(EX2_dst_width         ),
         .dst_width_out    	(MEN_dst_width     ),
-        .rd_addr          	(EX_rd_addr           ),
+        .rd_addr          	(EX2_rd_addr           ),
         .rd_addr_out        (MEN_rd_addr        ),
-        .rd_sel           	(EX_rd_sel            ),
+        .rd_sel           	(EX2_rd_sel            ),
         .rd_sel_out       	(MEN_rd_sel        ),
-        .alu_output       	(EX_alu_output        ),
+        .alu_output       	(EX2_alu_output        ),
         .alu_output_out   	(MEN_alu_output    )
     );
     
@@ -327,50 +390,11 @@ module CPU(
     // MEM
 
     logic [31:0] MEN_alu_output;
-    logic [31:0] MEN_dst_data;
-    logic [31:0] MEN_pc;
     logic [31:0] MEN_npc;
     logic [2:0] MEN_dst_width;
     logic MEN_rd_we;
     logic [2:0] MEN_rd_sel;
     logic [4:0] MEN_rd_addr;
-
-    logic MEN_ecall;
-
-    logic [63:0] MEN_multiplier_output;
-
-    read_ctrl u_read_ctrl(
-        .dst_read_data       (Dcache_if.dst_read_data       ),
-        .addr                (MEN_alu_output[1:0]),
-        .dst_width           (MEN_dst_width),
-        .data_out            (MEN_dst_data)    
-    );
-
-
-    logic [11:0] MEN_csr_addr;
-    logic [31:0] MEN_csr_wdata;
-    logic MEN_csr_we;
-    logic [31:0] MEN_csr_rdata;
-
-    logic [31:0] multiplier_output_low;
-    logic [31:0] multiplier_output_high;
-    assign multiplier_output_low = MEN_multiplier_output[31:0];
-    assign multiplier_output_high = MEN_multiplier_output[63:32];
-
-    logic [31:0] MEN_rd;
-
-    always_comb begin
-        case(MEN_rd_sel)
-            `rd_sel_alu_output:
-                MEN_rd = MEN_alu_output;
-            `rd_sel_dst_data:
-                MEN_rd = MEN_dst_data;
-            `rd_sel_npc:
-                MEN_rd = MEN_npc;
-            default:
-                MEN_rd = MEN_alu_output;
-        endcase
-    end
 
     //--------------------------------------
     logic men_wb_stall;
@@ -383,21 +407,51 @@ module CPU(
         .rd_addr_out    (WB_rd_addr    ),
         .rd_en          (MEN_rd_we          ),
         .rd_en_out      (WB_rd_we      ),
-        .rd             (MEN_rd),
-        .rd_out         (rd         ),
-        .pc             (MEN_pc             ),
-        .pc_out         (WB_pc         ),
+        .rd_sel         (MEN_rd_sel         ),
+        .rd_sel_out     (WB_rd_sel     ),
+        .alu_output     (MEN_alu_output     ),
+        .alu_output_out (WB_alu_output ),
+        .dst_read_data       (Dcache_if.dst_read_data       ),
+        .dst_read_data_out   (WB_dst_read_data   ),
+        .dst_width    ( MEN_dst_width    ),
+        .dst_width_out (WB_dst_width ),
         .npc         	(MEN_npc          ),
         .npc_out     	(WB_npc      )
     );
     
     //--------------------------------------
     // WB
-    
-    logic [31:0] WB_pc;
+
     logic [31:0] WB_npc;
     logic [4:0] WB_rd_addr;
     logic WB_rd_we;
+    logic [2:0] WB_rd_sel;
+    logic [31:0] WB_alu_output;
+    logic [31:0] WB_dst_read_data;
+    logic [31:0] WB_dst_data;
+    logic [2:0] WB_dst_width;
+
+    read_ctrl u_read_ctrl(
+        .dst_read_data       (WB_dst_read_data),
+        .addr                (WB_alu_output[1:0]),
+        .dst_width           (WB_dst_width),
+        .data_out            (WB_dst_data)    
+    );
+
+
+    always_comb begin
+        case(WB_rd_sel)
+            `rd_sel_alu_output:
+                rd = WB_alu_output;
+            `rd_sel_dst_data:
+                rd = WB_dst_data;
+            `rd_sel_npc:
+                rd = WB_npc;
+            default:
+                rd = WB_alu_output;
+        endcase
+    end
+
     //--------------------------------------
     // test module
 
@@ -415,8 +469,10 @@ module CPU(
     logic [1:0] forward_rs2;
     
     hazard_forwarding_unit u_hazard_forwarding_unit(
-        .EX_rd_we(EX_rd_we),
-        .EX_rd_addr(EX_rd_addr),
+        .EX1_rd_we(EX1_rd_we),
+        .EX1_rd_addr(EX1_rd_addr),
+        .EX2_rd_we(EX2_rd_we),
+        .EX2_rd_addr(EX2_rd_addr),
         .MEN_rd_we (MEN_rd_we),
         .MEN_rd_addr ( MEN_rd_addr),
         .ID_rs1_addr (ID_rs1_addr),
@@ -427,12 +483,14 @@ module CPU(
     
 
     branch u_branch(
-        .branch_sel 	(EX_branch_sel  ),
-        .alu_output 	(EX_alu_output  ),
-        .rs1        	(EX_rs1         ),
-        .rs2        	(EX_rs2         ),
-        .current_npc 	(EX_npc         ),
-        .next_pc    	(EX_next_pc     ),
+        .clk        	(clk         ),
+        .rst        	(rst         ),
+        .branch_sel 	(EX1_branch_sel  ),
+        .alu_output 	(EX2_alu_output  ),
+        .rs1        	(EX1_rs1         ),
+        .rs2        	(EX1_rs2         ),
+        .current_npc 	(EX2_npc         ),
+        .next_pc    	(EX2_next_pc     ),
         .branch_pc    	(branch_pc     ),
         .branch_en  	(branch_en   )
     );

@@ -100,7 +100,7 @@ void compare(){
         printf("Register %d mismatch: SKcpu_state: %08x, nemu_state: %08x\n", i, SKcpu_state.gpr[i], nemu_state.gpr[i]);
             //exit(0);
     }
-    if (!(SKcpu_state.csr.mtvec == nemu_state.csr.mtvec || SKcpu_state.csr.mtvec == nemu_state.csr.mtvec - 0x80000000)) {
+    /* if (!(SKcpu_state.csr.mtvec == nemu_state.csr.mtvec || SKcpu_state.csr.mtvec == nemu_state.csr.mtvec - 0x80000000)) {
         printf("mtvec mismatch: SKcpu_state: %08x, nemu_state: %08x\n", SKcpu_state.csr.mtvec, nemu_state.csr.mtvec);
         //exit(0);
     }
@@ -115,18 +115,18 @@ void compare(){
     if (SKcpu_state.csr.mstatus != nemu_state.csr.mstatus) {
         printf("mstatus mismatch: SKcpu_state: %08x, nemu_state: %08x\n", SKcpu_state.csr.mstatus, nemu_state.csr.mstatus);
         //exit(0);
-    }
+    } */
 }
 
 void difftest(){
     difftest_step();
     compare();
-    printf("sk");
+    /* printf("sk");
     print_regfile(SKcpu_state);
     printf("nemu");
     print_regfile(nemu_state);
     printf("----------------------------------------------------------------\n");
-    getchar();
+    getchar(); */
 }
 
 int main(int argc, char **argv)
