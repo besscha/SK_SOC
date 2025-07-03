@@ -17,13 +17,15 @@ module PC(
 );
     logic [31:0] pc_reg= 32'h8000_0000;
     
-    assign pc = prediction_en ? prediction_pc : pc_reg;
+    assign pc = branch_en ? branch_pc :
+                prediction_en ? prediction_pc :
+                pc_reg;
     assign npc = pc + 4;
 
     always_ff @(posedge clk) begin
         if(rst) begin
             pc_reg <= 32'h8000_0000;
-        end else if(branch_en) begin
+        end else if(branch_en && stall) begin
             pc_reg <= branch_pc;
         end else if(stall) begin
             pc_reg <= pc_reg;

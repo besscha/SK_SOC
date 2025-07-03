@@ -296,7 +296,7 @@ module CPU(
     logic EX1_forward_rs2_men;
 
     assign EX1_rs1 = (EX1_forward_rs1_men == 1'b1) ? WB_dst_data : EX1_rs1_temp;
-    assign EX1_rs2 = (EX1_forward_rs1_men == 1'b1) ? WB_dst_data : EX1_rs2_temp;
+    assign EX1_rs2 = (EX1_forward_rs2_men == 1'b1) ? WB_dst_data : EX1_rs2_temp;
 
     assign alu_input1 = (EX1_alu_input1_sel == 1'b1) ? EX1_pc : EX1_rs1;
     assign alu_input2 = (EX1_alu_input2_sel == 1'b1) ? EX1_imm : EX1_rs2;

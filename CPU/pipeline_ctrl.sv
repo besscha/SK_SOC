@@ -28,10 +28,10 @@ module pipeline_ctrl(
     assign ex2_men_stall = 1'b0;
     assign men_wb_stall = 1'b0;
 
-    assign if1_if2_flush = branch_en;
+    assign if1_if2_flush = 1'b0;
     assign if2_id_flush = branch_en || (Icache_miss && !if2_id_stall);
     assign id_ex1_flush = branch_en || (nop_load_use && !id_ex1_stall);
     assign ex1_ex2_flush = branch_en;
-    assign Icache_flush = branch_en;
+    assign Icache_flush = 1'b0;
 
 endmodule
