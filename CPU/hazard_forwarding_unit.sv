@@ -6,8 +6,8 @@ module hazard_forwarding_unit(
     input logic EX2_rd_we,
     input logic [4:0] EX2_rd_addr,
 
-    input logic MEN_rd_we,
-    input logic [4:0] MEN_rd_addr,
+    input logic MEM_rd_we,
+    input logic [4:0] MEM_rd_addr,
 
     input logic [4:0] ID_rs1_addr,
     input logic [4:0] ID_rs2_addr,
@@ -26,8 +26,8 @@ module hazard_forwarding_unit(
                 forward_rs1 = 2'b01; // 转发自 EX 阶段
             end else if (EX2_rd_we && EX2_rd_addr == ID_rs1_addr) begin
                 forward_rs1 = 2'b10; // 转发自 EX 阶段
-            end else if (MEN_rd_we && MEN_rd_addr == ID_rs1_addr) begin
-                forward_rs1 = 2'b11; // 转发自 MEN 阶段
+            end else if (MEM_rd_we && MEM_rd_addr == ID_rs1_addr) begin
+                forward_rs1 = 2'b11; // 转发自 MEM 阶段
             end
         end
 
@@ -37,8 +37,8 @@ module hazard_forwarding_unit(
                 forward_rs2 = 2'b01; // 转发自 EX 阶段
             end else if (EX2_rd_we && EX2_rd_addr == ID_rs2_addr) begin
                 forward_rs2 = 2'b10; // 转发自 EX 阶段
-            end else if (MEN_rd_we && MEN_rd_addr == ID_rs2_addr) begin
-                forward_rs2 = 2'b11; // 转发自 MEN 阶段
+            end else if (MEM_rd_we && MEM_rd_addr == ID_rs2_addr) begin
+                forward_rs2 = 2'b11; // 转发自 MEM 阶段
             end
         end
     end

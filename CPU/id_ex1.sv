@@ -30,10 +30,10 @@ module id_ex1(
     output logic [31:0] rs1_out,
     input logic [31:0] rs2,
     output logic [31:0] rs2_out,
-    input logic forward_rs1_men,
-    output logic forward_rs1_men_out,
-    input logic forward_rs2_men,
-    output logic forward_rs2_men_out,
+    input logic forward_rs1_mem,
+    output logic forward_rs1_mem_out,
+    input logic forward_rs2_mem,
+    output logic forward_rs2_mem_out,
     input logic [31:0] pc,
     output logic [31:0] pc_out,
     input logic [31:0] npc,
@@ -55,8 +55,8 @@ module id_ex1(
             rd_sel_out <= 3'b0;
             rs1_out <= 32'h0;
             rs2_out <= 32'h0;
-            forward_rs1_men_out <= 1'b0;
-            forward_rs2_men_out <= 1'b0;
+            forward_rs1_mem_out <= 1'b0;
+            forward_rs2_mem_out <= 1'b0;
             pc_out <= 32'h8000_0000;
             npc_out <= 32'h8000_0000;
             next_pc_out <= 32'h8000_0000;
@@ -73,8 +73,8 @@ module id_ex1(
             rd_sel_out <= rd_sel;
             rs1_out <= rs1;
             rs2_out <= rs2;
-            forward_rs1_men_out <= forward_rs1_men;
-            forward_rs2_men_out <= forward_rs2_men;
+            forward_rs1_mem_out <= forward_rs1_mem;
+            forward_rs2_mem_out <= forward_rs2_mem;
             pc_out <= pc;
             npc_out <= npc;
             next_pc_out <= next_pc;

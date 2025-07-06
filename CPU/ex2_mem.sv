@@ -1,4 +1,4 @@
-module ex2_men(
+module ex2_mem(
     input logic clk,
     input logic rst,
     input logic stall,

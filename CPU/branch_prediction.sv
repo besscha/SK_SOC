@@ -2,13 +2,13 @@
 
 /* verilator lint_off DECLFILENAME */
 
-module branch_predicion(
+module branch_prediction(
     input logic [31:0] pc,
     input logic [31:0] npc,
     input logic [31:0] ist,
 
     output logic [31:0] next_pc,
-    output logic branch_predicion_en
+    output logic branch_prediction_en
 );
 
     static_module static_module_inst(
@@ -16,7 +16,7 @@ module branch_predicion(
         .npc(npc),
         .ist(ist),
         .next_pc(next_pc),
-        .branch_predicion_en(branch_predicion_en)
+        .branch_prediction_en(branch_prediction_en)
     );
 
 endmodule
@@ -27,7 +27,7 @@ module static_module(
     input logic [31:0] ist,
 
     output logic [31:0] next_pc,
-    output logic branch_predicion_en
+    output logic branch_prediction_en
 );
 
     logic B_en;
@@ -43,13 +43,13 @@ module static_module(
     always_comb begin
         if (B_en && imm13_B[31] == 1)begin
             next_pc = pc + imm13_B;
-            branch_predicion_en = 1'b1;
+            branch_prediction_en = 1'b1;
         end else if (J_en) begin
             next_pc = pc + imm21_J;
-            branch_predicion_en = 1'b1;
+            branch_prediction_en = 1'b1;
         end else begin
             next_pc = npc;
-            branch_predicion_en = 1'b0;
+            branch_prediction_en = 1'b0;
         end
     end
 endmodule

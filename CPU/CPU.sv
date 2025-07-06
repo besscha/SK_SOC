@@ -10,10 +10,10 @@ module CPU(
     logic nop_load_use;
     logic load_use_EX1;
     logic load_use_EX2;
-   // logic load_use_MEN;
+   // logic load_use_MEM;
     assign load_use_EX1 = (EX1_rd_sel == `rd_sel_dst_data) && (EX1_rd_addr == ID_rs1_addr || EX1_rd_addr == ID_rs2_addr) && (EX1_rd_we == 1'b1);
     assign load_use_EX2 = (EX2_rd_sel == `rd_sel_dst_data) && (EX2_rd_addr == ID_rs1_addr || EX2_rd_addr == ID_rs2_addr) && (EX2_rd_we == 1'b1); 
-    //assign load_use_MEN = (MEN_rd_sel == `rd_sel_dst_data) && (MEN_rd_addr == ID_rs1_addr || MEN_rd_addr == ID_rs2_addr) && (MEN_rd_we == 1'b1);
+    //assign load_use_MEM = (MEM_rd_sel == `rd_sel_dst_data) && (MEM_rd_addr == ID_rs1_addr || MEM_rd_addr == ID_rs2_addr) && (MEM_rd_we == 1'b1);
 
     logic nop_load_use_reg1;
     //logic nop_load_use_reg2;
@@ -41,8 +41,8 @@ module CPU(
         .if2_id_stall               (if2_id_stall),
         .id_ex1_stall                (id_ex1_stall ),
         .ex1_ex2_stall               (ex1_ex2_stall),
-        .ex2_men_stall               (ex2_men_stall),
-        .men_wb_stall               (men_wb_stall),
+        .ex2_mem_stall               (ex2_mem_stall),
+        .mem_wb_stall               (mem_wb_stall),
         .Icache_stall               (Icache_stall),
         
         .if1_if2_flush              (if1_if2_flush),
@@ -67,7 +67,7 @@ module CPU(
         .branch_pc 	(branch_pc  ),
         .branch_en 	(branch_en  ),
         .prediction_pc (IF2_next_pc),
-        .prediction_en (branch_predicion_en),
+        .prediction_en (branch_prediction_en),
         .stall      (pc_stall        ),
         .pc        	(IF1_pc         ),
         .npc       	(IF1_npc        )
@@ -109,13 +109,13 @@ module CPU(
     logic if2_id_flush;
 
     logic [31:0] IF2_next_pc;
-    logic branch_predicion_en;
+    logic branch_prediction_en;
     
-    branch_predicion u_branch_predicion(
+    branch_prediction u_branch_prediction(
         .pc      	(IF2_pc       ),
         .npc     	(IF2_npc      ),
         .ist     	(IF2_ist_data      ),
-        .branch_predicion_en(branch_predicion_en),
+        .branch_prediction_en(branch_prediction_en),
         .next_pc 	(IF2_next_pc  )
     );
 
@@ -200,7 +200,7 @@ module CPU(
             2'b10:
                 ID_rs1 = EX2_rd_sel == `rd_sel_alu_output ? EX2_alu_output : EX2_npc;
             2'b11:
-                ID_rs1 = MEN_rd_sel == `rd_sel_alu_output ? MEN_alu_output : MEN_npc;
+                ID_rs1 = MEM_rd_sel == `rd_sel_alu_output ? MEM_alu_output : MEM_npc;
         endcase
     end
 
@@ -213,15 +213,15 @@ module CPU(
             2'b10:
                 ID_rs2 = EX2_rd_sel == `rd_sel_alu_output ? EX2_alu_output : EX2_npc;
             2'b11:
-                ID_rs2 = MEN_rd_sel == `rd_sel_alu_output ? MEN_alu_output : MEN_npc;
+                ID_rs2 = MEM_rd_sel == `rd_sel_alu_output ? MEM_alu_output : MEM_npc;
         endcase
     end
 
-    logic forward_rs1_men;
-    logic forward_rs2_men;
+    logic forward_rs1_MEM;
+    logic forward_rs2_MEM;
 
-    assign forward_rs1_men = forward_rs1 == 2'b11 && MEN_rd_sel == `rd_sel_dst_data;
-    assign forward_rs2_men = forward_rs2 == 2'b11 && MEN_rd_sel == `rd_sel_dst_data;
+    assign forward_rs1_MEM = forward_rs1 == 2'b11 && MEM_rd_sel == `rd_sel_dst_data;
+    assign forward_rs2_MEM = forward_rs2 == 2'b11 && MEM_rd_sel == `rd_sel_dst_data;
     //--------------------------------------
 
     logic id_ex1_stall;
@@ -256,10 +256,10 @@ module CPU(
         .rs1_out    	(EX1_rs1_temp        	),
         .rs2        	(ID_rs2         ),
         .rs2_out    	(EX1_rs2_temp        	),
-        .forward_rs1_men    (forward_rs1_men    ),
-        .forward_rs1_men_out  (EX1_forward_rs1_men  ),
-        .forward_rs2_men    (forward_rs2_men    ),
-        .forward_rs2_men_out  (EX1_forward_rs2_men  ),
+        .forward_rs1_mem    (forward_rs1_MEM    ),
+        .forward_rs1_mem_out  (EX1_forward_rs1_MEM  ),
+        .forward_rs2_mem    (forward_rs2_MEM    ),
+        .forward_rs2_mem_out  (EX1_forward_rs2_MEM  ),
         .pc         	(ID_pc        	),
         .pc_out     	(EX1_pc        	),
         .npc        	(ID_npc       	),
@@ -292,11 +292,11 @@ module CPU(
     logic [31:0] alu_input2;
     logic [31:0] EX1_alu_output;
 
-    logic EX1_forward_rs1_men;
-    logic EX1_forward_rs2_men;
+    logic EX1_forward_rs1_MEM;
+    logic EX1_forward_rs2_MEM;
 
-    assign EX1_rs1 = (EX1_forward_rs1_men == 1'b1) ? WB_dst_data : EX1_rs1_temp;
-    assign EX1_rs2 = (EX1_forward_rs2_men == 1'b1) ? WB_dst_data : EX1_rs2_temp;
+    assign EX1_rs1 = (EX1_forward_rs1_MEM == 1'b1) ? WB_dst_data : EX1_rs1_temp;
+    assign EX1_rs2 = (EX1_forward_rs2_MEM == 1'b1) ? WB_dst_data : EX1_rs2_temp;
 
     assign alu_input1 = (EX1_alu_input1_sel == 1'b1) ? EX1_pc : EX1_rs1;
     assign alu_input2 = (EX1_alu_input2_sel == 1'b1) ? EX1_imm : EX1_rs2;
@@ -366,56 +366,56 @@ module CPU(
     //assign Dcache_miss = Dcache_if.Dcache_miss;
 
     //--------------------------------------
-    logic ex2_men_stall;
+    logic ex2_mem_stall;
 
-    ex2_men u_ex2_men(
+    ex2_mem u_ex2_mem(
         .clk              	(clk               ),
         .rst              	(rst               ),
-        .stall            	(ex2_men_stall       ),
+        .stall            	(ex2_mem_stall       ),
         .npc              	(EX2_npc               ),
-        .npc_out          	(MEN_npc          	 ),
+        .npc_out          	(MEM_npc          	 ),
         .rd_we            	(EX2_rd_we             ),
-        .rd_we_out        	(MEN_rd_we         ),
+        .rd_we_out        	(MEM_rd_we         ),
         .dst_width        	(EX2_dst_width         ),
-        .dst_width_out    	(MEN_dst_width     ),
+        .dst_width_out    	(MEM_dst_width     ),
         .rd_addr          	(EX2_rd_addr           ),
-        .rd_addr_out        (MEN_rd_addr        ),
+        .rd_addr_out        (MEM_rd_addr        ),
         .rd_sel           	(EX2_rd_sel            ),
-        .rd_sel_out       	(MEN_rd_sel        ),
+        .rd_sel_out       	(MEM_rd_sel        ),
         .alu_output       	(EX2_alu_output        ),
-        .alu_output_out   	(MEN_alu_output    )
+        .alu_output_out   	(MEM_alu_output    )
     );
     
     //--------------------------------------
     // MEM
 
-    logic [31:0] MEN_alu_output;
-    logic [31:0] MEN_npc;
-    logic [2:0] MEN_dst_width;
-    logic MEN_rd_we;
-    logic [2:0] MEN_rd_sel;
-    logic [4:0] MEN_rd_addr;
+    logic [31:0] MEM_alu_output;
+    logic [31:0] MEM_npc;
+    logic [2:0] MEM_dst_width;
+    logic MEM_rd_we;
+    logic [2:0] MEM_rd_sel;
+    logic [4:0] MEM_rd_addr;
 
     //--------------------------------------
-    logic men_wb_stall;
+    logic mem_wb_stall;
 
-    men_wb u_men_wb(
+    mem_wb u_mem_wb(
         .clk         	(clk          ),
         .rst         	(rst          ),
-        .stall          (men_wb_stall          ),
-        .rd_addr        (MEN_rd_addr        ),
+        .stall          (mem_wb_stall          ),
+        .rd_addr        (MEM_rd_addr        ),
         .rd_addr_out    (WB_rd_addr    ),
-        .rd_en          (MEN_rd_we          ),
+        .rd_en          (MEM_rd_we          ),
         .rd_en_out      (WB_rd_we      ),
-        .rd_sel         (MEN_rd_sel         ),
+        .rd_sel         (MEM_rd_sel         ),
         .rd_sel_out     (WB_rd_sel     ),
-        .alu_output     (MEN_alu_output     ),
+        .alu_output     (MEM_alu_output     ),
         .alu_output_out (WB_alu_output ),
         .dst_read_data       (Dcache_if.dst_read_data       ),
         .dst_read_data_out   (WB_dst_read_data   ),
-        .dst_width    ( MEN_dst_width    ),
+        .dst_width    ( MEM_dst_width    ),
         .dst_width_out (WB_dst_width ),
-        .npc         	(MEN_npc          ),
+        .npc         	(MEM_npc          ),
         .npc_out     	(WB_npc      )
     );
     
@@ -473,8 +473,8 @@ module CPU(
         .EX1_rd_addr(EX1_rd_addr),
         .EX2_rd_we(EX2_rd_we),
         .EX2_rd_addr(EX2_rd_addr),
-        .MEN_rd_we (MEN_rd_we),
-        .MEN_rd_addr ( MEN_rd_addr),
+        .MEM_rd_we (MEM_rd_we),
+        .MEM_rd_addr ( MEM_rd_addr),
         .ID_rs1_addr (ID_rs1_addr),
         .ID_rs2_addr (ID_rs2_addr),
         .forward_rs1 (forward_rs1),
