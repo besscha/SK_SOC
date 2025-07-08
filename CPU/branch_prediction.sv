@@ -1,27 +1,12 @@
 `include "param.vh"
 
 /* verilator lint_off DECLFILENAME */
+/* verilator lint_off UNUSED */
 
 module branch_prediction(
-    input logic [31:0] pc,
-    input logic [31:0] npc,
-    input logic [31:0] ist,
+    input logic clk,
+    input logic rst,
 
-    output logic [31:0] next_pc,
-    output logic branch_prediction_en
-);
-
-    static_module static_module_inst(
-        .pc(pc),
-        .npc(npc),
-        .ist(ist),
-        .next_pc(next_pc),
-        .branch_prediction_en(branch_prediction_en)
-    );
-
-endmodule
-
-module static_module(
     input logic [31:0] pc,
     input logic [31:0] npc,
     input logic [31:0] ist,
@@ -39,7 +24,7 @@ module static_module(
     assign imm13_B = {{19{ist[31]}}, ist[31], ist[7], ist[30:25], ist[11:8], 1'b0};
     logic [31:0] imm21_J;
     assign imm21_J = {{11{ist[31]}}, ist[31], ist[19:12], ist[20], ist[30:21], 1'b0};
-    
+
     always_comb begin
         if (B_en && imm13_B[31] == 1)begin
             next_pc = pc + imm13_B;
@@ -52,4 +37,5 @@ module static_module(
             branch_prediction_en = 1'b0;
         end
     end
+
 endmodule

@@ -13,7 +13,8 @@ module branch(
     input logic [31:0] rs2,
     
     output logic [31:0] branch_pc,
-    output logic branch_en
+    output logic branch_en,
+    output logic branch_res
 );
 
     logic branch_en_temp;
@@ -73,5 +74,7 @@ module branch(
             branch_pc = current_npc;
         end
     end
+
+    assign branch_res = branch_en_reg;
 
 endmodule

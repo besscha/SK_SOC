@@ -5,6 +5,8 @@ module ex1_ex2(
     input logic stall,
     input logic flush,
 
+    input logic [31:0] pc,
+    output logic [31:0] pc_out,
     input logic [31:0] npc,
     output logic [31:0] npc_out,
     input logic [31:0] next_pc,
@@ -27,6 +29,7 @@ module ex1_ex2(
 
     always_ff @(posedge clk) begin
         if (rst || flush) begin
+            pc_out <= 32'h8000_0000; // Reset to a safe value
             npc_out <= 32'h8000_0000;
             next_pc_out <= 32'h8000_0000;
             rd_we_out <= 1'b0;
@@ -37,6 +40,7 @@ module ex1_ex2(
             alu_output_out <= 32'b0;
             rd_addr_out <= 5'b0;
         end else if (!stall) begin
+            pc_out <= pc;
             npc_out <= npc;
             next_pc_out <= next_pc;
             rd_we_out <= rd_we;

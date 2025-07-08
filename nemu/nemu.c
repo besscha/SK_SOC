@@ -24,6 +24,9 @@ void init_difftest(void){
     void (*difftest_init)(int) = (void (*)(int))dlsym(handle, "difftest_init");
     difftest_init(1234);
     difftest_memcpy(0x80000000, pmen, 300000, DIFFTEST_TO_REF);
+    uint16_t p[1000] = {0};
+    difftest_memcpy(0x80100000, p, sizeof(p), DIFFTEST_TO_REF);
+    difftest_memcpy(0x80200000, p, sizeof(p), DIFFTEST_TO_REF);
     nemu_state.pc = 0x80000000;
     nemu_state.csr.mtvec = 0x4;
     nemu_state.csr.mstatus = 0x6;

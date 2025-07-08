@@ -111,14 +111,21 @@ module CPU(
     logic [31:0] IF2_next_pc;
     logic branch_prediction_en;
     
-    branch_prediction u_branch_prediction(
+    dynamic_branch_prediction u_branch_prediction(
+        .clk     	(clk      ),
+        .rst     	(rst      ),
         .pc      	(IF2_pc       ),
         .npc     	(IF2_npc      ),
         .ist     	(IF2_ist_data      ),
         .branch_prediction_en(branch_prediction_en),
-        .next_pc 	(IF2_next_pc  )
+        .next_pc 	(IF2_next_pc  ),
+        .branch_sel (EX1_branch_sel),
+        .branch_en (branch_res),
+        .branch_ist_addr (EX2_pc)
     );
 
+
+    
     if2_id u_if2_id(
         .clk       	(clk        ),
         .rst       	(rst        ),
@@ -318,6 +325,8 @@ module CPU(
         .rst              	(rst               ),
         .stall            	(ex1_ex2_stall       ),
         .flush              (ex1_ex2_flush        ),
+        .pc               	(EX1_pc                ),
+        .pc_out           	(EX2_pc           	 ),
         .npc              	(EX1_npc               ),
         .npc_out          	(EX2_npc          	 ),
         .next_pc         	(EX1_next_pc          ),
@@ -349,6 +358,7 @@ module CPU(
     logic [4:0] EX2_rd_addr;
     logic [31:0] EX2_npc;
     logic [31:0] EX2_next_pc;
+    logic [31:0] EX2_pc;
     logic [31:0] EX2_alu_output;
 
     logic Dcache_flush;
@@ -481,7 +491,7 @@ module CPU(
         .forward_rs2 (forward_rs2)
     );
     
-
+    logic branch_res;
     branch u_branch(
         .clk        	(clk         ),
         .rst        	(rst         ),
@@ -492,7 +502,8 @@ module CPU(
         .current_npc 	(EX2_npc         ),
         .next_pc    	(EX2_next_pc     ),
         .branch_pc    	(branch_pc     ),
-        .branch_en  	(branch_en   )
+        .branch_en  	(branch_en   ),
+        .branch_res 	(branch_res  )
     );
 
 endmodule

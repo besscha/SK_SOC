@@ -20,8 +20,8 @@ module pipeline_ctrl(
 );
 
     assign pc_stall = nop_load_use || Icache_miss || Dcache_miss;
-    assign Icache_stall = nop_load_use|| Dcache_miss;
-    assign if1_if2_stall = nop_load_use || Icache_miss || Dcache_miss;
+    assign Icache_stall = (nop_load_use || Dcache_miss) && !branch_en;
+    assign if1_if2_stall = (nop_load_use || Icache_miss || Dcache_miss) && !branch_en;
     assign if2_id_stall = nop_load_use || Dcache_miss;
     assign id_ex1_stall = 1'b0;
     assign ex1_ex2_stall = 1'b0;

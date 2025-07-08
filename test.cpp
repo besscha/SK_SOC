@@ -121,12 +121,6 @@ void compare(){
 void difftest(){
     difftest_step();
     compare();
-    /* printf("sk");
-    print_regfile(SKcpu_state);
-    printf("nemu");
-    print_regfile(nemu_state);
-    printf("----------------------------------------------------------------\n");
-    getchar(); */
 }
 
 int main(int argc, char **argv)
@@ -169,7 +163,8 @@ int main(int argc, char **argv)
     }
     int last_pc = SKcpu_state.pc;
     
-    for(int i=0;i<200;){
+    int ist_num = 0;
+    for(int i=0;i<60000;i++){
         
         top->clk = top->clk ? 0 : 1;
         top->eval();
@@ -180,7 +175,16 @@ int main(int argc, char **argv)
         if(last_pc != SKcpu_state.pc){
             last_pc = SKcpu_state.pc;
             //printf("led: %08x\n", top->LED);
+            ist_num++;
             difftest();
+            /* if (i > 2000){
+                printf("sk");
+                print_regfile(SKcpu_state);
+                printf("nemu");
+                print_regfile(nemu_state);
+                printf("----------------------------------------------------------------\n");
+                getchar();
+            } */
         }
 
         if (ist == 0x00000000 || ist == 0x00000073) {
@@ -195,6 +199,7 @@ int main(int argc, char **argv)
     }
     //print_regfile();
 
+    printf("ist_num: %d\n", ist_num);
     if (SKcpu_state.gpr[10] == 0xFFFFFFFF) {
         printf("Test passed!\n");
     } else {
